@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Examen2.SettingsPage"
+             Title="Ajustes">
+
+    <VerticalStackLayout Padding="30" Spacing="15">
+        <Label Text="Configuración de la cuenta" FontSize="24" FontAttributes="Bold" />
+        <HorizontalStackLayout Spacing="10">
+            <Label Text="Notificaciones por correo" VerticalOptions="Center" />
+            <Switch IsToggled="True" />
+        </HorizontalStackLayout>
+    </VerticalStackLayout>
+</ContentPage>

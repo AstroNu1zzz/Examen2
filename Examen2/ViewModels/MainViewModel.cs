@@ -1,53 +1,284 @@
-﻿using System.Collections.ObjectModel;
+﻿using Examen2.Data;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Storage;
+using SQLite;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace Examen2.ViewModels
 {
-    public class MainViewModel
+    public class MainViewModel : INotifyPropertyChanged
     {
+        private readonly DatabaseService _databaseService;
+
+        // --- GESTIÓN DEL PERFIL DE USUARIO ---
+        private User _currentUser;
+        public User CurrentUser
+        {
+            get => _currentUser;
+            set
+            {
+                _currentUser = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(UserInitial));
+            }
+        }
+
+        public string UserInitial => !string.IsNullOrEmpty(CurrentUser?.Username)
+            ? CurrentUser.Username.Substring(0, 1).ToUpper()
+            : (!string.IsNullOrEmpty(CurrentUser?.Email) ? CurrentUser.Email.Substring(0, 1).ToUpper() : "U");
+
+        private bool _hasProfilePicture;
+        public bool HasProfilePicture
+        {
+            get => _hasProfilePicture;
+            set { _hasProfilePicture = value; OnPropertyChanged(); }
+        }
+
+        private ImageSource _profileImageSource;
+        public ImageSource ProfileImageSource
+        {
+            get => _profileImageSource;
+            set { _profileImageSource = value; OnPropertyChanged(); }
+        }
+
+        // --- CONTROL DEL MENÚ DESPLEGABLE ---
+        private bool _isProfileMenuVisible;
+        public bool IsProfileMenuVisible
+        {
+            get => _isProfileMenuVisible;
+            set { _isProfileMenuVisible = value; OnPropertyChanged(); }
+        }
+
+        // --- PROPIEDADES DE LA INTERFAZ ---
         public ObservableCollection<Course> EnrolledCourses { get; set; }
         public string NextDeadlineMessage { get; set; }
 
-        // Comandos de navegación principal
+        // --- COMANDOS ---
         public ICommand NavigateHomeCommand { get; }
         public ICommand NavigateCalendarCommand { get; }
         public ICommand NavigatePendingTasksCommand { get; }
+        public ICommand NavigateArchivedCommand { get; }
         public ICommand NavigateSettingsCommand { get; }
-
-        // Comandos de interacción con los elementos
         public ICommand OpenCourseCommand { get; }
         public ICommand OpenCourseFilesCommand { get; }
+        public ICommand ViewPendingTaskCommand { get; }
+        public ICommand ChangeProfilePictureCommand { get; }
+        public ICommand ToggleProfileMenuCommand { get; }
+        public ICommand LogoutCommand { get; }
+        public ICommand AddCourseCommand { get; }
+        public ICommand DeleteCourseCommand { get; }
 
-        public MainViewModel()
+        public MainViewModel(DatabaseService databaseService)
         {
+            _databaseService = databaseService;
             EnrolledCourses = new ObservableCollection<Course>();
-            // Aquí haces tu consulta con Entity Framework Core a la base de datos
-            // LoadCoursesFromDatabase();
 
             NextDeadlineMessage = "No tienes ningún trabajo que entregar en los próximos 7 días";
 
-            OpenCourseCommand = new Command<Course>(OpenCourse);
-            OpenCourseFilesCommand = new Command<Course>(OpenCourseFiles);
+            NavigateHomeCommand = new Command(OnNavigateHome);
+            NavigateCalendarCommand = new Command(OnNavigateCalendar);
+            NavigatePendingTasksCommand = new Command(OnNavigatePendingTasks);
+            NavigateArchivedCommand = new Command(OnNavigateArchived);
+            NavigateSettingsCommand = new Command(OnNavigateSettings);
+
+            OpenCourseCommand = new Command<Course>(OnOpenCourse);
+            OpenCourseFilesCommand = new Command<Course>(OnOpenCourseFiles);
+            ViewPendingTaskCommand = new Command(OnNavigatePendingTasks);
+
+            ChangeProfilePictureCommand = new Command(OnChangeProfilePicture);
+            ToggleProfileMenuCommand = new Command(() => IsProfileMenuVisible = !IsProfileMenuVisible);
+            LogoutCommand = new Command(OnLogout);
+
+            AddCourseCommand = new Command(OnAddCourse);
+            DeleteCourseCommand = new Command<Course>(OnDeleteCourse);
+
+            _ = LoadCoursesAsync();
         }
 
-        private void OpenCourse(Course selectedCourse)
+        public void SetCurrentUser(User user)
         {
-            if (selectedCourse == null) return;
-            // Lógica para navegar a la página de la clase (Ej: Tablón) pasando el ID del curso
+            CurrentUser = user;
+            if (user != null)
+            {
+                Preferences.Default.Set("LoggedInUserId", user.Id);
+            }
+            LoadProfilePicture();
         }
 
-        private void OpenCourseFiles(Course selectedCourse)
+        private void LoadProfilePicture()
+        {
+            if (CurrentUser != null && !string.IsNullOrEmpty(CurrentUser.ProfilePicturePath) && File.Exists(CurrentUser.ProfilePicturePath))
+            {
+                ProfileImageSource = ImageSource.FromFile(CurrentUser.ProfilePicturePath);
+                HasProfilePicture = true;
+            }
+            else
+            {
+                ProfileImageSource = null;
+                HasProfilePicture = false;
+            }
+        }
+
+        private async void OnChangeProfilePicture()
+        {
+            IsProfileMenuVisible = false;
+            try
+            {
+                var result = await MediaPicker.Default.PickPhotoAsync();
+
+                if (result != null)
+                {
+                    if (CurrentUser == null)
+                        CurrentUser = new User { Id = 1, Username = "Usuario" };
+
+                    string localPath = Path.Combine(FileSystem.AppDataDirectory, $"profile_{CurrentUser.Id}.jpg");
+
+                    using (var stream = await result.OpenReadAsync())
+                    using (var newStream = File.OpenWrite(localPath))
+                    {
+                        await stream.CopyToAsync(newStream);
+                    }
+
+                    CurrentUser.ProfilePicturePath = localPath;
+                    await _databaseService.UpdateUserAsync(CurrentUser);
+
+                    ProfileImageSource = ImageSource.FromFile(localPath);
+                    HasProfilePicture = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (Application.Current?.MainPage != null)
+                    await Application.Current.MainPage.DisplayAlert("Error", $"No se pudo cargar la imagen: {ex.Message}", "OK");
+            }
+        }
+
+        private void OnLogout()
+        {
+            Preferences.Default.Remove("LoggedInUserId");
+            IsProfileMenuVisible = false;
+            CurrentUser = null;
+            ProfileImageSource = null;
+            HasProfilePicture = false;
+
+            var loginPage = Application.Current?.Handler?.MauiContext?.Services.GetService<LoginPage>();
+            if (Application.Current?.Windows.Count > 0 && loginPage != null)
+            {
+                Application.Current.Windows[0].Page = new NavigationPage(loginPage);
+            }
+        }
+
+        public async Task RefreshCoursesAsync()
+        {
+            await LoadCoursesAsync();
+        }
+
+        private async void OnAddCourse()
+        {
+            var addCoursePage = Application.Current?.Handler?.MauiContext?.Services.GetService<AddCoursePage>();
+            if (Application.Current?.MainPage != null && addCoursePage != null)
+            {
+                await Application.Current.MainPage.Navigation.PushAsync(addCoursePage);
+            }
+        }
+
+        private async void OnDeleteCourse(Course course)
+        {
+            if (course == null) return;
+
+            bool confirm = await Application.Current.MainPage.DisplayAlert(
+                "Eliminar clase",
+                $"¿Estás seguro de que deseas eliminar '{course.CourseName}'?",
+                "Eliminar", "Cancelar");
+
+            if (confirm)
+            {
+                await _databaseService.DeleteCourseAsync(course.Id);
+                await LoadCoursesAsync();
+            }
+        }
+
+        private async Task LoadCoursesAsync()
+        {
+            var courses = await _databaseService.GetCoursesAsync();
+            EnrolledCourses.Clear();
+            foreach (var course in courses)
+            {
+                EnrolledCourses.Add(course);
+            }
+        }
+
+        private async void OnNavigateHome() => await LoadCoursesAsync();
+
+        private async void OnNavigateCalendar()
+        {
+            if (Application.Current?.MainPage != null)
+                await Application.Current.MainPage.Navigation.PushAsync(new CalendarPage());
+        }
+
+        private async void OnNavigatePendingTasks()
+        {
+            if (Application.Current?.MainPage != null)
+                await Application.Current.MainPage.Navigation.PushAsync(new PendingTaskPage());
+        }
+
+        private async void OnNavigateArchived()
+        {
+            if (Application.Current?.MainPage != null)
+                await Application.Current.MainPage.DisplayAlert("Clases archivadas", "No tienes clases archivadas en este ciclo escolar.", "OK");
+        }
+
+        private async void OnNavigateSettings()
+        {
+            if (Application.Current?.MainPage != null)
+                await Application.Current.MainPage.Navigation.PushAsync(new SettingsPage());
+        }
+
+        private async void OnOpenCourse(Course selectedCourse)
         {
             if (selectedCourse == null) return;
-            // Lógica para abrir la vista del explorador de archivos del curso
+            if (Application.Current?.MainPage != null)
+                await Application.Current.MainPage.Navigation.PushAsync(new CourseDetailPage(selectedCourse));
+        }
+
+        private async void OnOpenCourseFiles(Course selectedCourse)
+        {
+            if (selectedCourse == null) return;
+            if (Application.Current?.MainPage != null)
+                await Application.Current.MainPage.DisplayAlert("Archivos de clase", $"Abriendo la carpeta de Drive/archivos locales para {selectedCourse.CourseName}", "OK");
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 
     public class Course
     {
+        [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
         public string CourseName { get; set; }
         public string TeacherName { get; set; }
-        public string ThemeColor { get; set; } // Ej: "#1E8E3E"
+        public string ThemeColor { get; set; }
+    }
+
+    public class User
+    {
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+
+        [Unique]
+        public string Username { get; set; }
+
+        public string Email { get; set; }
+        public string Password { get; set; }
+        public string ProfilePicturePath { get; set; }
     }
 }

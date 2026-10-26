@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Examen2.AddCoursePage"
+             Title="Crear clase"
+             BackgroundColor="#F8F9FA">
+
+    <ScrollView Padding="30">
+        <VerticalStackLayout Spacing="20" HorizontalOptions="Center" WidthRequest="400">
+            <Label Text="Crear una nueva clase" FontSize="24" FontAttributes="Bold" TextColor="#1A73E8" />
+
+            <Border BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1" Padding="20">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12" />
+                </Border.StrokeShape>
+
+                <VerticalStackLayout Spacing="15">
+                    <!-- Nombre de la Clase -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Nombre de la clase (obligatorio)" FontSize="12" TextColor="#5F6368" />
+                        <Entry x:Name="TxtCourseName" Placeholder="ej. CÁLCULO INTEGRAL 5IM6" />
+                    </VerticalStackLayout>
+
+                    <!-- Nombre del Profesor -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Profesor" FontSize="12" TextColor="#5F6368" />
+                        <Entry x:Name="TxtTeacherName" Placeholder="ej. Christopher Cesar Perez" />
+                    </VerticalStackLayout>
+
+                    <!-- Color de Banner -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Color del tema" FontSize="12" TextColor="#5F6368" />
+                        <Picker x:Name="PkrThemeColor" Title="Selecciona un color">
+                            <Picker.ItemsSource>
+                                <x:Array Type="{x:Type x:String}">
+                                    <x:String>Verde (#1E8E3E)</x:String>
+                                    <x:String>Azul (#1967D2)</x:String>
+                                    <x:String>Gris Oscuro (#455A64)</x:String>
+                                    <x:String>Morado (#673AB7)</x:String>
+                                    <x:String>Rojo (#D93025)</x:String>
+                                </x:Array>
+                            </Picker.ItemsSource>
+                        </Picker>
+                    </VerticalStackLayout>
+
+                    <!-- Botones de Acción -->
+                    <Grid ColumnDefinitions="*, *" ColumnSpacing="10" Margin="0,15,0,0">
+                        <Button Grid.Column="0" Text="Cancelar" Clicked="OnCancelClicked" BackgroundColor="Transparent" TextColor="#5F6368" />
+                        <Button Grid.Column="1" Text="Crear" Clicked="OnCreateCourseClicked" BackgroundColor="#1A73E8" TextColor="White" CornerRadius="6" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,17 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿namespace Examen2;
 
-namespace Examen2
+public partial class App : Application
 {
-    public partial class App : Application
+    public App(LoginPage loginPage)
     {
-        public App()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
 
-        protected override Window CreateWindow(IActivationState? activationState)
-        {
-            return new Window(new AppShell());
-        }
+        // Carga síncrona de la página inicial
+        MainPage = new NavigationPage(loginPage);
     }
 }

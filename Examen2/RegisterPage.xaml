@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Examen2.RegisterPage"
+             BackgroundColor="#F8F9FA"
+             NavigationPage.HasNavigationBar="False">
+
+    <ScrollView VerticalOptions="Center">
+        <Grid HorizontalOptions="Center" Margin="0,20">
+            <Border BackgroundColor="White"
+                    Stroke="#E0E0E0"
+                    StrokeThickness="1"
+                    WidthRequest="380"
+                    Padding="30">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12" />
+                </Border.StrokeShape>
+
+                <VerticalStackLayout Spacing="16">
+                    <Label Text="Classroom"
+                           FontSize="28"
+                           FontAttributes="Bold"
+                           TextColor="#1A73E8"
+                           HorizontalOptions="Center" />
+
+                    <Label Text="Crear una cuenta"
+                           FontSize="18"
+                           TextColor="#3C4043"
+                           HorizontalOptions="Center" />
+
+                    <!-- Nombre de usuario -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Nombre de usuario" FontSize="12" TextColor="#5F6368" />
+                        <Entry x:Name="TxtUsername" Placeholder="ej. nsepulveda" />
+                    </VerticalStackLayout>
+
+                    <!-- Correo electrónico -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Correo electrónico" FontSize="12" TextColor="#5F6368" />
+                        <Entry x:Name="TxtEmail" Placeholder="ejemplo@cecyt13.ipn.mx" Keyboard="Email" />
+                    </VerticalStackLayout>
+
+                    <!-- Contraseña -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Contraseña" FontSize="12" TextColor="#5F6368" />
+                        <Entry x:Name="TxtPassword" IsPassword="True" Placeholder="••••••••" />
+                    </VerticalStackLayout>
+
+                    <!-- Confirmar Contraseña -->
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Confirmar contraseña" FontSize="12" TextColor="#5F6368" />
+                        <Entry x:Name="TxtConfirmPassword" IsPassword="True" Placeholder="••••••••" />
+                    </VerticalStackLayout>
+
+                    <!-- Botón Registrar -->
+                    <Button Text="Registrarse"
+                            BackgroundColor="#1A73E8"
+                            TextColor="White"
+                            CornerRadius="6"
+                            HeightRequest="42"
+                            Margin="0,10,0,0"
+                            Clicked="OnRegisterClicked" />
+
+                    <!-- Enlace a Login -->
+                    <Button Text="¿Ya tienes cuenta? Inicia sesión"
+                            BackgroundColor="Transparent"
+                            TextColor="#1A73E8"
+                            FontSize="13"
+                            Clicked="OnBackToLoginClicked" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </ScrollView>
+</ContentPage>

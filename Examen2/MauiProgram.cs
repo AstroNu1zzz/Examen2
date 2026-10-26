@@ -18,7 +18,12 @@ namespace Examen2
 #if DEBUG
     		builder.Logging.AddDebug();
 #endif
-
+            builder.Services.AddSingleton<Examen2.Data.DatabaseService>();
+            builder.Services.AddSingleton<Examen2.ViewModels.MainViewModel>();
+            builder.Services.AddTransient<MainPage>();
+            builder.Services.AddTransient<LoginPage>();
+            builder.Services.AddTransient<RegisterPage>();
+            builder.Services.AddTransient<AddCoursePage>();
             return builder.Build();
         }
     }

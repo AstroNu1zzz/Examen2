@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Examen2.TwoFactorPage"
+             BackgroundColor="#F8F9FA"
+             NavigationPage.HasNavigationBar="False">
+
+    <Grid VerticalOptions="Center" HorizontalOptions="Center">
+        <Border BackgroundColor="White"
+                Stroke="#E0E0E0"
+                StrokeThickness="1"
+                WidthRequest="380"
+                Padding="30">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="12" />
+            </Border.StrokeShape>
+
+            <VerticalStackLayout Spacing="18">
+                <Label Text="Autenticación de 2 factores"
+                       FontSize="22"
+                       FontAttributes="Bold"
+                       TextColor="#3C4043"
+                       HorizontalOptions="Center" />
+
+                <Label x:Name="LblEmailInfo"
+       FontSize="13"
+       TextColor="#5F6368"
+       HorizontalTextAlignment="Center"
+       LineBreakMode="WordWrap" />
+
+                <!-- Campo PIN 6 Dígitos -->
+                <Entry x:Name="TxtCode"
+                       Placeholder="000000"
+                       MaxLength="6"
+                       Keyboard="Numeric"
+                       HorizontalTextAlignment="Center"
+                       FontSize="24" />
+
+                <Button Text="Verificar e Ingresar"
+                        BackgroundColor="#1A73E8"
+                        TextColor="White"
+                        CornerRadius="6"
+                        HeightRequest="42"
+                        Margin="0,10,0,0"
+                        Clicked="OnVerifyClicked" />
+
+                <Button Text="Cancelar"
+                        BackgroundColor="Transparent"
+                        TextColor="#5F6368"
+                        Clicked="OnCancelClicked" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>
