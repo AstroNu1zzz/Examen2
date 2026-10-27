@@ -34,7 +34,8 @@
                        MaxLength="6"
                        Keyboard="Numeric"
                        HorizontalTextAlignment="Center"
-                       FontSize="24" />
+                       FontSize="24" 
+                       TextColor="#5F6368"/>
 
                 <Button Text="Verificar e Ingresar"
                         BackgroundColor="#1A73E8"

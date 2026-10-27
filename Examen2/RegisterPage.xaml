@@ -31,25 +31,25 @@
                     <!-- Nombre de usuario -->
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Nombre de usuario" FontSize="12" TextColor="#5F6368" />
-                        <Entry x:Name="TxtUsername" Placeholder="ej. nsepulveda" />
+                        <Entry x:Name="TxtUsername" Placeholder="ej. nsepulveda" TextColor="#5F6368"/>
                     </VerticalStackLayout>
 
                     <!-- Correo electrónico -->
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Correo electrónico" FontSize="12" TextColor="#5F6368" />
-                        <Entry x:Name="TxtEmail" Placeholder="ejemplo@cecyt13.ipn.mx" Keyboard="Email" />
+                        <Entry x:Name="TxtEmail" Placeholder="ejemplo@cecyt13.ipn.mx" Keyboard="Email" TextColor="#5F6368"/>
                     </VerticalStackLayout>
 
                     <!-- Contraseña -->
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Contraseña" FontSize="12" TextColor="#5F6368" />
-                        <Entry x:Name="TxtPassword" IsPassword="True" Placeholder="••••••••" />
+                        <Entry x:Name="TxtPassword" IsPassword="True" Placeholder="••••••••" TextColor="#5F6368"/>
                     </VerticalStackLayout>
 
                     <!-- Confirmar Contraseña -->
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Confirmar contraseña" FontSize="12" TextColor="#5F6368" />
-                        <Entry x:Name="TxtConfirmPassword" IsPassword="True" Placeholder="••••••••" />
+                        <Entry x:Name="TxtConfirmPassword" IsPassword="True" Placeholder="••••••••" TextColor="#5F6368"/>
                     </VerticalStackLayout>
 
                     <!-- Botón Registrar -->

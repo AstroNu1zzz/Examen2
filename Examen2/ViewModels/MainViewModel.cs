@@ -46,12 +46,19 @@ namespace Examen2.ViewModels
             set { _profileImageSource = value; OnPropertyChanged(); }
         }
 
-        // --- CONTROL DEL MENÚ DESPLEGABLE ---
+        // --- CONTROL DE MENÚS (PERFIL Y MENÚ LATERAL) ---
         private bool _isProfileMenuVisible;
         public bool IsProfileMenuVisible
         {
             get => _isProfileMenuVisible;
             set { _isProfileMenuVisible = value; OnPropertyChanged(); }
+        }
+
+        private bool _isDrawerVisible;
+        public bool IsDrawerVisible
+        {
+            get => _isDrawerVisible;
+            set { _isDrawerVisible = value; OnPropertyChanged(); }
         }
 
         // --- PROPIEDADES DE LA INTERFAZ ---
@@ -69,6 +76,7 @@ namespace Examen2.ViewModels
         public ICommand ViewPendingTaskCommand { get; }
         public ICommand ChangeProfilePictureCommand { get; }
         public ICommand ToggleProfileMenuCommand { get; }
+        public ICommand ToggleDrawerCommand { get; }
         public ICommand LogoutCommand { get; }
         public ICommand AddCourseCommand { get; }
         public ICommand DeleteCourseCommand { get; }
@@ -92,6 +100,7 @@ namespace Examen2.ViewModels
 
             ChangeProfilePictureCommand = new Command(OnChangeProfilePicture);
             ToggleProfileMenuCommand = new Command(() => IsProfileMenuVisible = !IsProfileMenuVisible);
+            ToggleDrawerCommand = new Command(() => IsDrawerVisible = !IsDrawerVisible);
             LogoutCommand = new Command(OnLogout);
 
             AddCourseCommand = new Command(OnAddCourse);
@@ -106,6 +115,7 @@ namespace Examen2.ViewModels
             if (user != null)
             {
                 Preferences.Default.Set("LoggedInUserId", user.Id);
+                _ = LoadCoursesAsync(); // Recarga las clases del nuevo usuario
             }
             LoadProfilePicture();
         }
@@ -162,6 +172,7 @@ namespace Examen2.ViewModels
         {
             Preferences.Default.Remove("LoggedInUserId");
             IsProfileMenuVisible = false;
+            IsDrawerVisible = false;
             CurrentUser = null;
             ProfileImageSource = null;
             HasProfilePicture = false;
@@ -180,6 +191,7 @@ namespace Examen2.ViewModels
 
         private async void OnAddCourse()
         {
+            IsDrawerVisible = false;
             var addCoursePage = Application.Current?.Handler?.MauiContext?.Services.GetService<AddCoursePage>();
             if (Application.Current?.MainPage != null && addCoursePage != null)
             {
@@ -205,7 +217,13 @@ namespace Examen2.ViewModels
 
         private async Task LoadCoursesAsync()
         {
-            var courses = await _databaseService.GetCoursesAsync();
+            if (CurrentUser == null)
+            {
+                EnrolledCourses.Clear();
+                return;
+            }
+
+            var courses = await _databaseService.GetCoursesAsync(CurrentUser.Id);
             EnrolledCourses.Clear();
             foreach (var course in courses)
             {
@@ -213,34 +231,43 @@ namespace Examen2.ViewModels
             }
         }
 
-        private async void OnNavigateHome() => await LoadCoursesAsync();
+        private async void OnNavigateHome()
+        {
+            IsDrawerVisible = false;
+            await LoadCoursesAsync();
+        }
 
         private async void OnNavigateCalendar()
         {
+            IsDrawerVisible = false;
             if (Application.Current?.MainPage != null)
                 await Application.Current.MainPage.Navigation.PushAsync(new CalendarPage());
         }
 
         private async void OnNavigatePendingTasks()
         {
+            IsDrawerVisible = false;
             if (Application.Current?.MainPage != null)
                 await Application.Current.MainPage.Navigation.PushAsync(new PendingTaskPage());
         }
 
         private async void OnNavigateArchived()
         {
+            IsDrawerVisible = false;
             if (Application.Current?.MainPage != null)
                 await Application.Current.MainPage.DisplayAlert("Clases archivadas", "No tienes clases archivadas en este ciclo escolar.", "OK");
         }
 
         private async void OnNavigateSettings()
         {
+            IsDrawerVisible = false;
             if (Application.Current?.MainPage != null)
                 await Application.Current.MainPage.Navigation.PushAsync(new SettingsPage());
         }
 
         private async void OnOpenCourse(Course selectedCourse)
         {
+            IsDrawerVisible = false;
             if (selectedCourse == null) return;
             if (Application.Current?.MainPage != null)
                 await Application.Current.MainPage.Navigation.PushAsync(new CourseDetailPage(selectedCourse));
@@ -248,6 +275,7 @@ namespace Examen2.ViewModels
 
         private async void OnOpenCourseFiles(Course selectedCourse)
         {
+            IsDrawerVisible = false;
             if (selectedCourse == null) return;
             if (Application.Current?.MainPage != null)
                 await Application.Current.MainPage.DisplayAlert("Archivos de clase", $"Abriendo la carpeta de Drive/archivos locales para {selectedCourse.CourseName}", "OK");
@@ -265,8 +293,20 @@ namespace Examen2.ViewModels
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
         public string CourseName { get; set; }
-        public string TeacherName { get; set; }
         public string ThemeColor { get; set; }
+
+        // ID y Nombre del creador/profesor principal
+        public int PrimaryTeacherId { get; set; }
+        public string PrimaryTeacherName { get; set; }
+    }
+
+    public class CourseTeacher
+    {
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+        public int CourseId { get; set; }
+        public int UserId { get; set; }
+        public bool IsPrimary { get; set; }
     }
 
     public class User
@@ -280,5 +320,20 @@ namespace Examen2.ViewModels
         public string Email { get; set; }
         public string Password { get; set; }
         public string ProfilePicturePath { get; set; }
+    }
+
+    public class ClassContentItem
+    {
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+        public int CourseId { get; set; }
+
+        // Tipo: "Anuncio", "Material", o "Tarea"
+        public string ItemType { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public DateTime? DueDate { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public string AuthorName { get; set; }
     }
 }

@@ -14,13 +14,12 @@ public partial class AddCoursePage : ContentPage
         _databaseService = databaseService;
         _mainViewModel = mainViewModel;
 
-        PkrThemeColor.SelectedIndex = 0; // Selecciona verde por defecto
+        PkrThemeColor.SelectedIndex = 0;
     }
 
     private async void OnCreateCourseClicked(object sender, EventArgs e)
     {
         string courseName = TxtCourseName.Text?.Trim();
-        string teacherName = TxtTeacherName.Text?.Trim();
 
         if (string.IsNullOrEmpty(courseName))
         {
@@ -28,33 +27,37 @@ public partial class AddCoursePage : ContentPage
             return;
         }
 
-        // Mapeo de colores según la opción seleccionada
+        if (_mainViewModel.CurrentUser == null)
+        {
+            await DisplayAlert("Error", "No hay una sesión activa de usuario.", "OK");
+            return;
+        }
+
         string selectedColor = PkrThemeColor.SelectedIndex switch
         {
-            1 => "#1967D2", // Azul
-            2 => "#455A64", // Gris Oscuro
-            3 => "#673AB7", // Morado
-            4 => "#D93025", // Rojo
-            _ => "#1E8E3E"  // Verde
+            1 => "#1967D2",
+            2 => "#455A64",
+            3 => "#673AB7",
+            4 => "#D93025",
+            _ => "#1E8E3E"
         };
 
         var newCourse = new Course
         {
             CourseName = courseName,
-            TeacherName = string.IsNullOrEmpty(teacherName) ? "Sin profesor asignado" : teacherName,
             ThemeColor = selectedColor
         };
 
-        bool success = await _databaseService.AddCourseAsync(newCourse);
+        bool success = await _databaseService.AddCourseAsync(newCourse, _mainViewModel.CurrentUser);
 
         if (success)
         {
-            await _mainViewModel.RefreshCoursesAsync(); // Actualiza la lista en el MainPage
+            await _mainViewModel.RefreshCoursesAsync();
             await Navigation.PopAsync();
         }
         else
         {
-            await DisplayAlert("Error", "No se pudo crear la clase en la base de datos.", "OK");
+            await DisplayAlert("Error", "No se pudo crear la clase.", "OK");
         }
     }
 

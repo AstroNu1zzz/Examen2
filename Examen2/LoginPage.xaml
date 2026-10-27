@@ -33,7 +33,8 @@
                     <Label Text="Usuario o Correo" FontSize="12" TextColor="#5F6368" />
                     <Entry x:Name="TxtUser"
                            Placeholder="ejemplo@cecyt13.ipn.mx"
-                           Text="alumno@cecyt13.ipn.mx" />
+                           Text="alumno@cecyt13.ipn.mx" 
+                           TextColor="#5F6368"/>
                 </VerticalStackLayout>
 
                 <!-- Campo Contraseña -->
@@ -41,7 +42,8 @@
                     <Label Text="Contraseña" FontSize="12" TextColor="#5F6368" />
                     <Entry x:Name="TxtPassword"
                            IsPassword="True"
-                           Text="123" />
+                           Text="123" 
+                           TextColor="#5F6368"/>
                 </VerticalStackLayout>
 
                 <!-- Botón de Ingreso -->
