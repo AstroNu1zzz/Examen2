@@ -15,29 +15,39 @@
                 </Border.StrokeShape>
 
                 <VerticalStackLayout Spacing="15">
-                    <VerticalStackLayout Spacing="5">
-                        <Label Text="Nombre de la clase (obligatorio)" FontSize="12" TextColor="#5F6368" />
-                        <Entry x:Name="TxtCourseName" Placeholder="ej. CÁLCULO INTEGRAL 5IM6" TextColor="#5F6368"/>
-                    </VerticalStackLayout>
 
                     <VerticalStackLayout Spacing="5">
-                        <Label Text="Color del tema" FontSize="12" TextColor="#5F6368" />
-                        <Picker x:Name="PkrThemeColor" Title="Selecciona un color" TextColor="#5F6368">
-                            <Picker.ItemsSource>
-                                <x:Array Type="{x:Type x:String}">
-                                    <x:String>Verde (#1E8E3E)</x:String>
-                                    <x:String>Azul (#1967D2)</x:String>
-                                    <x:String>Gris Oscuro (#455A64)</x:String>
-                                    <x:String>Morado (#673AB7)</x:String>
-                                    <x:String>Rojo (#D93025)</x:String>
-                                </x:Array>
-                            </Picker.ItemsSource>
-                        </Picker>
+                        <Label Text="Nombre de la clase (obligatorio)" FontSize="12" TextColor="#5F6368" />
+                        <Entry x:Name="TxtCourseName" Placeholder="ej. DERECHO MERCANTIL 5IM6" />
+                    </VerticalStackLayout>
+
+                    <!-- Selector de Imagen de Fondo -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Imagen de fondo (Banner)" FontSize="12" TextColor="#5F6368" />
+                        <Button Text="📷 Seleccionar Imagen" 
+            Clicked="OnPickImageClicked" 
+            BackgroundColor="#E8F0FE" 
+            TextColor="#1967D2" 
+            CornerRadius="8" />
+
+                        <!-- Contenedor Border para redondear la imagen correctamente -->
+                        <Border x:Name="BorderBannerPreview" 
+            IsVisible="False" 
+            Margin="0,10,0,0" 
+            StrokeThickness="0" 
+            HeightRequest="120">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="8" />
+                            </Border.StrokeShape>
+
+                            <Image x:Name="ImgBannerPreview" 
+               Aspect="AspectFill" />
+                        </Border>
                     </VerticalStackLayout>
 
                     <Grid ColumnDefinitions="*, *" ColumnSpacing="10" Margin="0,15,0,0">
                         <Button Grid.Column="0" Text="Cancelar" Clicked="OnCancelClicked" BackgroundColor="Transparent" TextColor="#5F6368" />
-                        <Button Grid.Column="1" Text="Crear" Clicked="OnCreateCourseClicked" BackgroundColor="#1A73E8" TextColor="White" CornerRadius="6" />
+                        <Button Grid.Column="1" Text="Crear" Clicked="OnCreateCourseClicked" BackgroundColor="#48E5C2" TextColor="White" FontAttributes="Bold" CornerRadius="8" />
                     </Grid>
                 </VerticalStackLayout>
             </Border>

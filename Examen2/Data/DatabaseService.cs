@@ -20,6 +20,8 @@ namespace Examen2.Data
             await _db.CreateTableAsync<User>();
             await _db.CreateTableAsync<CourseTeacher>();
             await _db.CreateTableAsync<ClassContentItem>();
+            await _db.CreateTableAsync<TaskSubmission>();
+            await _db.CreateTableAsync<Unit>();
 
             await SeedDataAsync();
         }
@@ -33,11 +35,67 @@ namespace Examen2.Data
                              .ToListAsync();
         }
 
+        public async Task<bool> SaveTaskSubmissionAsync(TaskSubmission submission)
+        {
+            await InitAsync();
+            var existing = await _db.Table<TaskSubmission>()
+                                    .Where(s => s.ContentItemId == submission.ContentItemId && s.UserId == submission.UserId)
+                                    .FirstOrDefaultAsync();
+
+            if (existing != null)
+            {
+                existing.FilePath = submission.FilePath;
+                existing.SubmittedAt = DateTime.Now;
+                return await _db.UpdateAsync(existing) > 0;
+            }
+
+            return await _db.InsertAsync(submission) > 0;
+        }
+
+        public async Task<TaskSubmission> GetTaskSubmissionAsync(int contentItemId, int userId)
+        {
+            await InitAsync();
+            return await _db.Table<TaskSubmission>()
+                            .Where(s => s.ContentItemId == contentItemId && s.UserId == userId)
+                            .FirstOrDefaultAsync();
+        }
+
         public async Task<bool> AddClassContentItemAsync(ClassContentItem item)
         {
             await InitAsync();
+
+            // Buscar si la fecha de creación entra en alguna unidad existente
+            var activeUnit = await _db.Table<Unit>()
+                                      .Where(u => u.CourseId == item.CourseId &&
+                                                  item.CreatedAt >= u.StartDate &&
+                                                  item.CreatedAt <= u.EndDate)
+                                      .FirstOrDefaultAsync();
+
+            if (activeUnit != null)
+            {
+                item.UnitId = activeUnit.Id;
+            }
+
             int rows = await _db.InsertAsync(item);
             return rows > 0;
+        }
+
+        public async Task<List<ClassContentItem>> GetGlobalActivitiesAsync(int userId)
+        {
+            await InitAsync();
+
+            // Obtener los IDs de los cursos donde el usuario está inscrito o es profesor
+            var teacherRelations = await _db.Table<CourseTeacher>().Where(ct => ct.UserId == userId).ToListAsync();
+            var courseIds = teacherRelations.Select(ct => ct.CourseId).ToList();
+
+            if (!courseIds.Any()) return new List<ClassContentItem>();
+
+            // Obtener los items de esos cursos ordenados por el más reciente
+            return await _db.Table<ClassContentItem>()
+                            .Where(i => courseIds.Contains(i.CourseId))
+                            .OrderByDescending(i => i.CreatedAt)
+                            .Take(20) // Limitar a las 20 novedades más recientes
+                            .ToListAsync();
         }
 
         private async Task SeedDataAsync()
@@ -141,6 +199,18 @@ namespace Examen2.Data
             });
 
             return (true, $"Profesor {targetUser.Username} asignado correctamente.");
+        }
+
+        public async Task<bool> AddUnitAsync(Unit unit)
+        {
+            await InitAsync();
+            return await _db.InsertAsync(unit) > 0;
+        }
+
+        public async Task<List<Unit>> GetCourseUnitsAsync(int courseId)
+        {
+            await InitAsync();
+            return await _db.Table<Unit>().Where(u => u.CourseId == courseId).OrderBy(u => u.StartDate).ToListAsync();
         }
 
         // Obtener la lista de profesores de una clase

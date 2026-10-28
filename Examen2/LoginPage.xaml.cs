@@ -69,7 +69,7 @@ public partial class LoginPage : ContentPage
 
             if (emailSent)
             {
-                await DisplayAlert("Código enviado", $"Hemos enviado un código de verificación real a {user.Email}", "Continuar");
+                await DisplayAlert("Código enviado", $"Hemos enviado un código de verificación a {user.Email}", "Continuar");
                 await Navigation.PushAsync(new TwoFactorPage(user, generatedCode));
             }
             else

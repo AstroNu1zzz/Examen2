@@ -48,6 +48,7 @@ namespace Examen2.ViewModels
 
         // --- CONTROL DE MENÚS (PERFIL Y MENÚ LATERAL) ---
         private bool _isProfileMenuVisible;
+        public ObservableCollection<ActivityItemViewModel> GlobalRecentActivities { get; set; } = new();
         public bool IsProfileMenuVisible
         {
             get => _isProfileMenuVisible;
@@ -220,14 +221,40 @@ namespace Examen2.ViewModels
             if (CurrentUser == null)
             {
                 EnrolledCourses.Clear();
+                GlobalRecentActivities.Clear();
                 return;
             }
 
+            // Cargar clases
             var courses = await _databaseService.GetCoursesAsync(CurrentUser.Id);
             EnrolledCourses.Clear();
             foreach (var course in courses)
             {
                 EnrolledCourses.Add(course);
+            }
+
+            // Cargar novedades globales para el Tablón de Novedades
+            var activities = await _databaseService.GetGlobalActivitiesAsync(CurrentUser.Id);
+            GlobalRecentActivities.Clear();
+
+            foreach (var a in activities)
+            {
+                // Asignación de gradientes e íconos estilo WorkFlow
+                string gradient = a.ItemType == "Tarea" ? "#FADBD8" : (a.ItemType == "Material" ? "#D6EAF8" : "#D1F2EB");
+                string icon = a.ItemType == "Tarea" ? "📋" : (a.ItemType == "Material" ? "📖" : "📢");
+
+                var parentCourse = courses.FirstOrDefault(c => c.Id == a.CourseId);
+                string courseName = parentCourse != null ? parentCourse.CourseName : "Clase";
+
+                GlobalRecentActivities.Add(new ActivityItemViewModel
+                {
+                    DisplayTitle = $"{a.ItemType}: {a.Title}",
+                    Subtitle = $"{courseName} • Publicado el {a.CreatedAt:dd MMM}",
+                    GradientStartColor = gradient,
+                    IconString = icon,
+                    HasDueDate = a.DueDate.HasValue,
+                    DueDateString = a.DueDate.HasValue ? $"Entrega: {a.DueDate.Value:dd/MM/yyyy HH:mm}" : ""
+                });
             }
         }
 
@@ -292,12 +319,15 @@ namespace Examen2.ViewModels
     {
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
+        public int UserId { get; set; }
         public string CourseName { get; set; }
+        public string TeacherName { get; set; }
         public string ThemeColor { get; set; }
-
-        // ID y Nombre del creador/profesor principal
         public int PrimaryTeacherId { get; set; }
         public string PrimaryTeacherName { get; set; }
+
+        // Nueva propiedad para la imagen de fondo de la clase
+        public string BannerImagePath { get; set; } = "default_course_bg.jpg";
     }
 
     public class CourseTeacher
@@ -327,13 +357,53 @@ namespace Examen2.ViewModels
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
         public int CourseId { get; set; }
-
-        // Tipo: "Anuncio", "Material", o "Tarea"
+        public int? UnitId { get; set; } // <--- Relación con la Unidad
         public string ItemType { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
+        public int Points { get; set; } = 100; // <--- Puntuación por defecto
         public DateTime? DueDate { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public string AuthorName { get; set; }
+        public string AttachedFilePath { get; set; }
+    }
+
+    public class TaskSubmission
+    {
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+        public int ContentItemId { get; set; }
+        public int UserId { get; set; }
+        public string FilePath { get; set; }
+        public DateTime SubmittedAt { get; set; } = DateTime.Now;
+    }
+
+    public class Unit
+    {
+        [PrimaryKey, AutoIncrement]
+        public int Id { get; set; }
+        public int CourseId { get; set; }
+        public string Name { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+    }
+
+    public class ActivityItemViewModel
+    {
+        public string DisplayTitle { get; set; }
+        public string Subtitle { get; set; }
+        public string GradientStartColor { get; set; }
+        public string IconString { get; set; }
+        public bool HasDueDate { get; set; }
+        public string DueDateString { get; set; }
+    }
+
+    public class UnitGroup : List<ClassContentItem>
+    {
+        public string Name { get; private set; }
+        public UnitGroup(string name, List<ClassContentItem> items) : base(items)
+        {
+            Name = name;
+        }
     }
 }

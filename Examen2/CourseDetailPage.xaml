@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Examen2.CourseDetailPage"
              BackgroundColor="#F8F9FA"
-             Title="{Binding CourseName}">
+             Title="Detalle del Curso">
 
     <Grid RowDefinitions="*, Auto">
 
@@ -13,37 +13,66 @@
             <!-- PESTAÑA 1: TABLÓN / NOVEDADES -->
             <ScrollView x:Name="ViewTablon" Padding="16" IsVisible="True">
                 <VerticalStackLayout Spacing="16">
-                    <!-- Banner de la clase -->
-                    <Border BackgroundColor="{Binding ThemeColor}" Padding="20" HeightRequest="120" StrokeThickness="0">
+                    <!-- Banner de la clase estilo WorkFlow -->
+                    <Border BackgroundColor="{Binding ThemeColor}" HeightRequest="140" StrokeThickness="0">
                         <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="10" />
+                            <RoundRectangle CornerRadius="12" />
                         </Border.StrokeShape>
-                        <VerticalStackLayout VerticalOptions="End">
-                            <Label Text="{Binding CourseName}" FontSize="22" FontAttributes="Bold" TextColor="White" />
-                            <Label Text="{Binding PrimaryTeacherName, StringFormat='Profesor: {0}'}" FontSize="13" TextColor="White" Opacity="0.9" />
-                        </VerticalStackLayout>
+                        <Grid>
+                            <!-- Fondo con opacidad -->
+                            <Image Source="{Binding BannerImagePath}" Aspect="AspectFill" Opacity="0.6" />
+                            <!-- Contenido del Banner -->
+                            <VerticalStackLayout VerticalOptions="End" Padding="20">
+                                <Label Text="{Binding CourseName}" FontSize="24" FontAttributes="Bold" TextColor="White" />
+                                <Label Text="{Binding PrimaryTeacherName, StringFormat='Profesor: {0}'}" FontSize="13" TextColor="White" Opacity="0.9" />
+                            </VerticalStackLayout>
+                        </Grid>
                     </Border>
 
-                    <!-- Lista de publicaciones (Anuncios, Materiales, Tareas) -->
-                    <Label Text="Novedades de la clase" FontSize="16" FontAttributes="Bold" TextColor="#202124" />
+                    <!-- Lista de publicaciones en el Tablón -->
+                    <Label Text="Tablón de Novedades" FontSize="16" FontAttributes="Bold" TextColor="#202124" Margin="0,10,0,0" />
 
                     <CollectionView x:Name="LstTablonItems" SelectionMode="None">
                         <CollectionView.ItemsLayout>
-                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
+                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
                         </CollectionView.ItemsLayout>
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Border BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1" Padding="14">
+                                <Border BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1" Padding="16">
                                     <Border.StrokeShape>
-                                        <RoundRectangle CornerRadius="8" />
+                                        <RoundRectangle CornerRadius="10" />
                                     </Border.StrokeShape>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnContentItemTapped" />
+                                    </Border.GestureRecognizers>
+
                                     <VerticalStackLayout Spacing="6">
                                         <Grid ColumnDefinitions="*, Auto">
-                                            <Label Text="{Binding AuthorName}" FontAttributes="Bold" FontSize="13" TextColor="#1A73E8" />
-                                            <Label Grid.Column="1" Text="{Binding ItemType}" FontSize="11" TextColor="#5F6368" />
+                                            <Label Text="{Binding AuthorName}" FontAttributes="Bold" FontSize="13" TextColor="#48E5C2" />
+                                            <Label Grid.Column="1" Text="{Binding ItemType}" FontSize="11" FontAttributes="Bold" TextColor="#1E3A5F" />
                                         </Grid>
+
                                         <Label Text="{Binding Title}" FontSize="16" FontAttributes="Bold" TextColor="#202124" />
-                                        <Label Text="{Binding Description}" FontSize="13" TextColor="#3C4043" />
+                                        <Label Text="{Binding Description}" FontSize="13" TextColor="#5F6368" MaxLines="2" LineBreakMode="TailTruncation" />
+
+                                        <!-- Botón para ver archivo en anuncios -->
+                                        <Button Text="📎 Abrir archivo adjunto"
+                                                Clicked="OnOpenAttachmentDirectly"
+                                                BackgroundColor="#F1F3F4"
+                                                TextColor="#1A73E8"
+                                                HeightRequest="36"
+                                                FontSize="12"
+                                                Padding="8,0"
+                                                Margin="0,6,0,0">
+                                            <Button.Triggers>
+                                                <DataTrigger TargetType="Button" Binding="{Binding AttachedFilePath}" Value="{x:Null}">
+                                                    <Setter Property="IsVisible" Value="False" />
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Button" Binding="{Binding AttachedFilePath}" Value="">
+                                                    <Setter Property="IsVisible" Value="False" />
+                                                </DataTrigger>
+                                            </Button.Triggers>
+                                        </Button>
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>
@@ -52,28 +81,60 @@
                 </VerticalStackLayout>
             </ScrollView>
 
-            <!-- PESTAÑA 2: TRABAJO DE CLASE -->
+            <!-- PESTAÑA 2: TRABAJO DE CLASE (AGRUPADO POR UNIDAD) -->
             <ScrollView x:Name="ViewTrabajo" Padding="16" IsVisible="False">
                 <VerticalStackLayout Spacing="16">
-                    <Label Text="Trabajo de clase" FontSize="18" FontAttributes="Bold" TextColor="#202124" />
+                    <Grid ColumnDefinitions="*, Auto">
+                        <Label Text="Plan de Actividades" FontSize="18" FontAttributes="Bold" TextColor="#202124" VerticalOptions="Center" />
+                        <Label Grid.Column="1" Text="Filtros" FontSize="12" TextColor="#48E5C2" VerticalOptions="Center" />
+                    </Grid>
 
-                    <CollectionView x:Name="LstTrabajoItems" SelectionMode="None">
-                        <CollectionView.ItemsLayout>
-                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="10" />
-                        </CollectionView.ItemsLayout>
+                    <CollectionView x:Name="LstTrabajoItems" IsGrouped="True" SelectionMode="None">
+
+                        <!-- HEADER DEL GRUPO (Nombre de la Unidad) -->
+                        <CollectionView.GroupHeaderTemplate>
+                            <DataTemplate>
+                                <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" TextColor="#48E5C2" Margin="0,15,0,10" />
+                            </DataTemplate>
+                        </CollectionView.GroupHeaderTemplate>
+
+                        <!-- TARJETA DEL ITEM DE TRABAJO/MATERIAL -->
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Border BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1" Padding="14">
+                                <Border BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1" Padding="12" Margin="0,0,0,10">
                                     <Border.StrokeShape>
-                                        <RoundRectangle CornerRadius="8" />
+                                        <RoundRectangle CornerRadius="10" />
                                     </Border.StrokeShape>
-                                    <Grid ColumnDefinitions="Auto, *" ColumnSpacing="12">
-                                        <Label Text="📝" FontSize="22" VerticalOptions="Center" />
-                                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnContentItemTapped" />
+                                    </Border.GestureRecognizers>
+
+                                    <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="15">
+                                        <!-- Ícono Oscuro -->
+                                        <Border Grid.Column="0" WidthRequest="44" HeightRequest="44" BackgroundColor="#1E3A5F" StrokeThickness="0" VerticalOptions="Center">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="22" />
+                                            </Border.StrokeShape>
+                                            <Label Text="📋" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        </Border>
+
+                                        <!-- Detalles -->
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                             <Label Text="{Binding Title}" FontSize="15" FontAttributes="Bold" TextColor="#202124" />
-                                            <Label Text="{Binding Description}" FontSize="12" TextColor="#5F6368" LineBreakMode="TailTruncation" />
-                                            <Label Text="{Binding DueDate, StringFormat='Fecha limite: {0:dd/MM/yyyy}'}" FontSize="11" TextColor="#D93025" />
+                                            <HorizontalStackLayout Spacing="6">
+                                                <Label Text="{Binding DueDate, StringFormat='Vence: {0:dd/MM/yyyy}'}" FontSize="12" TextColor="#D93025" />
+                                                <Label Text="•" FontSize="12" TextColor="#9AA0A6" />
+                                                <Label Text="{Binding Points, StringFormat='{0} pts'}" FontSize="12" TextColor="#5F6368" />
+                                            </HorizontalStackLayout>
                                         </VerticalStackLayout>
+
+                                        <!-- Etiqueta de Tipo o Estado -->
+                                        <Border Grid.Column="2" BackgroundColor="#1E3A5F" StrokeThickness="0" VerticalOptions="Center" Padding="12,6">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="12" />
+                                            </Border.StrokeShape>
+                                            <Label Text="{Binding ItemType}" FontSize="11" TextColor="White" FontAttributes="Bold" />
+                                        </Border>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -85,14 +146,29 @@
             <!-- PESTAÑA 3: PERSONAS -->
             <ScrollView x:Name="ViewPersonas" Padding="16" IsVisible="False">
                 <VerticalStackLayout Spacing="20">
-                    <Label Text="Profesores" FontSize="18" FontAttributes="Bold" TextColor="#1A73E8" />
+                    <Label Text="Profesores" FontSize="18" FontAttributes="Bold" TextColor="#48E5C2" />
+
                     <CollectionView x:Name="LstTeachers">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <HorizontalStackLayout Spacing="12" Padding="8,4">
-                                    <Label Text="👤" FontSize="18" VerticalOptions="Center" />
-                                    <Label Text="{Binding Username}" FontSize="15" TextColor="#202124" VerticalOptions="Center" />
-                                </HorizontalStackLayout>
+                                <Border BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1" Padding="12" Margin="0,0,0,10">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="8" />
+                                    </Border.StrokeShape>
+                                    <HorizontalStackLayout Spacing="12">
+                                        <!-- Avatar circular vacío o con inicial -->
+                                        <Border WidthRequest="40" HeightRequest="40" BackgroundColor="#F1F3F4" Stroke="#48E5C2" StrokeThickness="2" VerticalOptions="Center">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="20" />
+                                            </Border.StrokeShape>
+                                            <Label Text="👤" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                                        </Border>
+                                        <VerticalStackLayout VerticalOptions="Center">
+                                            <Label Text="{Binding Username}" FontSize="15" FontAttributes="Bold" TextColor="#202124" />
+                                            <Label Text="{Binding Email}" FontSize="12" TextColor="#5F6368" />
+                                        </VerticalStackLayout>
+                                    </HorizontalStackLayout>
+                                </Border>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
@@ -100,51 +176,63 @@
                     <BoxView HeightRequest="1" Color="#E0E0E0" />
 
                     <Grid ColumnDefinitions="*, Auto">
-                        <Label Text="Alumnos" FontSize="18" FontAttributes="Bold" TextColor="#1A73E8" />
-                        <Button Grid.Column="1" Text="＋ Añadir" Clicked="OnAddTeacherClicked" BackgroundColor="Transparent" TextColor="#1A73E8" FontSize="12" />
+                        <Label Text="Compañeros de clase" FontSize="18" FontAttributes="Bold" TextColor="#1E3A5F" />
+                        <Button Grid.Column="1" Text="＋ Añadir" Clicked="OnAddTeacherClicked" BackgroundColor="Transparent" TextColor="#48E5C2" FontSize="12" />
                     </Grid>
                 </VerticalStackLayout>
             </ScrollView>
 
-            <!-- BOTÓN FLOTANTE MÁS (+) PARA CREAR CONTENIDO -->
+            <!-- BOTÓN FLOTANTE MÁS (+) -->
             <Button Text="＋ Crear"
                     Clicked="OnCreateContentClicked"
-                    BackgroundColor="#1A73E8"
+                    BackgroundColor="#48E5C2"
                     TextColor="White"
                     FontAttributes="Bold"
-                    FontSize="14"
-                    CornerRadius="24"
-                    HeightRequest="48"
-                    Padding="16,0"
+                    FontSize="15"
+                    CornerRadius="25"
+                    HeightRequest="50"
+                    Padding="20,0"
                     HorizontalOptions="End"
                     VerticalOptions="End"
                     Margin="0,0,20,20" />
         </Grid>
 
-        <!-- BARRA DE NAVEGACIÓN INFERIOR (BOTTOM TAB BAR) -->
-        <Border Grid.Row="1" BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1" Padding="0">
+        <!-- BARRA DE NAVEGACIÓN INFERIOR ESTILO WORKFLOW -->
+        <Border Grid.Row="1" BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1" Padding="0,5">
             <Grid ColumnDefinitions="*, *, *">
-                <Button x:Name="BtnTabTablon"
-                        Grid.Column="0"
-                        Text="💬 Tablón"
-                        Clicked="OnTablonTabClicked"
-                        BackgroundColor="Transparent"
-                        TextColor="#1A73E8"
-                        FontAttributes="Bold" />
+                <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center">
+                    <Label Text="📢" FontSize="18" HorizontalOptions="Center" />
+                    <Button x:Name="BtnTabTablon"
+                            Text="Novedades"
+                            Clicked="OnTablonTabClicked"
+                            BackgroundColor="Transparent"
+                            TextColor="#48E5C2"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            Padding="0" HeightRequest="30" />
+                </VerticalStackLayout>
 
-                <Button x:Name="BtnTabTrabajo"
-                        Grid.Column="1"
-                        Text="📚 Trabajos"
-                        Clicked="OnTrabajoTabClicked"
-                        BackgroundColor="Transparent"
-                        TextColor="#5F6368" />
+                <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center">
+                    <Label Text="📋" FontSize="18" HorizontalOptions="Center" />
+                    <Button x:Name="BtnTabTrabajo"
+                            Text="Trabajos"
+                            Clicked="OnTrabajoTabClicked"
+                            BackgroundColor="Transparent"
+                            TextColor="#5F6368"
+                            FontSize="12"
+                            Padding="0" HeightRequest="30" />
+                </VerticalStackLayout>
 
-                <Button x:Name="BtnTabPersonas"
-                        Grid.Column="2"
-                        Text="👥 Personas"
-                        Clicked="OnPersonasTabClicked"
-                        BackgroundColor="Transparent"
-                        TextColor="#5F6368" />
+                <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center">
+                    <Label Text="👥" FontSize="18" HorizontalOptions="Center" />
+                    <Button x:Name="BtnTabPersonas"
+                            Text="Personas"
+                            Clicked="OnPersonasTabClicked"
+                            BackgroundColor="Transparent"
+                            TextColor="#5F6368"
+                            FontSize="12"
+                            Padding="0" HeightRequest="30" />
+                </VerticalStackLayout>
             </Grid>
         </Border>
     </Grid>

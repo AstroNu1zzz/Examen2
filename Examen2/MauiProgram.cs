@@ -24,6 +24,7 @@ namespace Examen2
             builder.Services.AddTransient<LoginPage>();
             builder.Services.AddTransient<RegisterPage>();
             builder.Services.AddTransient<AddCoursePage>();
+            builder.Services.AddTransient<ContentDetailPage>();
             return builder.Build();
         }
     }

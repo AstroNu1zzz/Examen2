@@ -8,13 +8,44 @@ public partial class AddCoursePage : ContentPage
     private readonly DatabaseService _databaseService;
     private readonly MainViewModel _mainViewModel;
 
+    // Ruta por defecto si el usuario no elige una imagen
+    private string _selectedImagePath = "default_course_bg.jpg";
+
     public AddCoursePage(DatabaseService databaseService, MainViewModel mainViewModel)
     {
         InitializeComponent();
         _databaseService = databaseService;
         _mainViewModel = mainViewModel;
+    }
 
-        PkrThemeColor.SelectedIndex = 0;
+    private async void OnPickImageClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var result = await MediaPicker.Default.PickPhotoAsync();
+
+            if (result != null)
+            {
+                // Copiar la imagen a la carpeta de datos de la app para que sea persistente
+                string localPath = Path.Combine(FileSystem.AppDataDirectory, result.FileName);
+
+                using (var stream = await result.OpenReadAsync())
+                using (var newStream = File.OpenWrite(localPath))
+                {
+                    await stream.CopyToAsync(newStream);
+                }
+
+                _selectedImagePath = localPath;
+
+                // Mostrar la vista previa
+                ImgBannerPreview.Source = ImageSource.FromFile(localPath);
+                ImgBannerPreview.IsVisible = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Error", $"No se pudo cargar la imagen: {ex.Message}", "OK");
+        }
     }
 
     private async void OnCreateCourseClicked(object sender, EventArgs e)
@@ -33,19 +64,10 @@ public partial class AddCoursePage : ContentPage
             return;
         }
 
-        string selectedColor = PkrThemeColor.SelectedIndex switch
-        {
-            1 => "#1967D2",
-            2 => "#455A64",
-            3 => "#673AB7",
-            4 => "#D93025",
-            _ => "#1E8E3E"
-        };
-
         var newCourse = new Course
         {
             CourseName = courseName,
-            ThemeColor = selectedColor
+            BannerImagePath = _selectedImagePath // Guardamos la ruta de la imagen
         };
 
         bool success = await _databaseService.AddCourseAsync(newCourse, _mainViewModel.CurrentUser);

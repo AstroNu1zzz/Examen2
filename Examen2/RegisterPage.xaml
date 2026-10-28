@@ -17,7 +17,7 @@
                 </Border.StrokeShape>
 
                 <VerticalStackLayout Spacing="16">
-                    <Label Text="Classroom"
+                    <Label Text="WorkFlow"
                            FontSize="28"
                            FontAttributes="Bold"
                            TextColor="#1A73E8"
