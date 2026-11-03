@@ -81,6 +81,7 @@ namespace Examen2.ViewModels
         public ICommand LogoutCommand { get; }
         public ICommand AddCourseCommand { get; }
         public ICommand DeleteCourseCommand { get; }
+        public ICommand OpenActivityCommand { get; }
 
         public MainViewModel(DatabaseService databaseService)
         {
@@ -94,6 +95,7 @@ namespace Examen2.ViewModels
             NavigatePendingTasksCommand = new Command(OnNavigatePendingTasks);
             NavigateArchivedCommand = new Command(OnNavigateArchived);
             NavigateSettingsCommand = new Command(OnNavigateSettings);
+            OpenActivityCommand = new Command<ActivityItemViewModel>(async (activity) => await OpenActivityAsync(activity));
 
             OpenCourseCommand = new Command<Course>(OnOpenCourse);
             OpenCourseFilesCommand = new Command<Course>(OnOpenCourseFiles);
@@ -108,6 +110,8 @@ namespace Examen2.ViewModels
             DeleteCourseCommand = new Command<Course>(OnDeleteCourse);
 
             _ = LoadCoursesAsync();
+
+
         }
 
         public void SetCurrentUser(User user)
@@ -132,6 +136,19 @@ namespace Examen2.ViewModels
             {
                 ProfileImageSource = null;
                 HasProfilePicture = false;
+            }
+        }
+
+
+        private async void OnOpenActivity(ActivityItemViewModel activity)
+        {
+            if (activity?.OriginalItem == null) return;
+
+            if (Application.Current?.MainPage != null)
+            {
+                await Application.Current.MainPage.Navigation.PushAsync(
+                    new ContentDetailPage(activity.OriginalItem, _databaseService, this)
+                );
             }
         }
 
@@ -187,7 +204,49 @@ namespace Examen2.ViewModels
 
         public async Task RefreshCoursesAsync()
         {
-            await LoadCoursesAsync();
+            if (CurrentUser == null) return;
+
+            // 1. Recargar lista de cursos inscritos
+            var courses = await _databaseService.GetCoursesAsync(CurrentUser.Id);
+            EnrolledCourses.Clear();
+            foreach (var c in courses)
+            {
+                EnrolledCourses.Add(c);
+            }
+
+            // 2. Recargar publicaciones del Tablón de Novedades Global
+            var activities = await _databaseService.GetGlobalActivitiesAsync(CurrentUser.Id);
+            GlobalRecentActivities.Clear(); // O RecentPosts.Clear() según como lo nombraste
+
+            foreach (var a in activities)
+            {
+                string gradient = a.ItemType switch
+                {
+                    "Tarea" => "#FADBD8",
+                    "Material" => "#D6EAF8",
+                    _ => "#D1F2EB"
+                };
+
+                string icon = a.ItemType switch
+                {
+                    "Tarea" => "📋",
+                    "Material" => "📖",
+                    _ => "📢"
+                };
+
+                var parentCourse = courses.FirstOrDefault(c => c.Id == a.CourseId);
+                string courseName = parentCourse != null ? parentCourse.CourseName : "Clase";
+
+                GlobalRecentActivities.Add(new ActivityItemViewModel
+                {
+                    DisplayTitle = $"{a.ItemType}: {a.Title}",
+                    Subtitle = $"{courseName} • Publicado el {a.CreatedAt:dd MMM}",
+                    GradientStartColor = gradient,
+                    IconString = icon,
+                    HasDueDate = a.DueDate.HasValue,
+                    DueDateString = a.DueDate.HasValue ? $"Entrega: {a.DueDate.Value:dd/MM/yyyy HH:mm}" : ""
+                });
+            }
         }
 
         private async void OnAddCourse()
@@ -248,6 +307,7 @@ namespace Examen2.ViewModels
 
                 GlobalRecentActivities.Add(new ActivityItemViewModel
                 {
+                    OriginalItem = a, // <--- Guardamos la referencia
                     DisplayTitle = $"{a.ItemType}: {a.Title}",
                     Subtitle = $"{courseName} • Publicado el {a.CreatedAt:dd MMM}",
                     GradientStartColor = gradient,
@@ -255,6 +315,18 @@ namespace Examen2.ViewModels
                     HasDueDate = a.DueDate.HasValue,
                     DueDateString = a.DueDate.HasValue ? $"Entrega: {a.DueDate.Value:dd/MM/yyyy HH:mm}" : ""
                 });
+            }
+        }
+
+        private async Task OpenActivityAsync(ActivityItemViewModel activity)
+        {
+            if (activity?.OriginalItem == null) return;
+
+            if (Application.Current?.MainPage != null)
+            {
+                await Application.Current.MainPage.Navigation.PushAsync(
+                    new ContentDetailPage(activity.OriginalItem, _databaseService, this)
+                );
             }
         }
 
@@ -297,7 +369,7 @@ namespace Examen2.ViewModels
             IsDrawerVisible = false;
             if (selectedCourse == null) return;
             if (Application.Current?.MainPage != null)
-                await Application.Current.MainPage.Navigation.PushAsync(new CourseDetailPage(selectedCourse));
+                await Application.Current.MainPage.Navigation.PushAsync(new CourseDetailPage(selectedCourse, _databaseService, this));
         }
 
         private async void OnOpenCourseFiles(Course selectedCourse)
@@ -390,6 +462,7 @@ namespace Examen2.ViewModels
 
     public class ActivityItemViewModel
     {
+        public ClassContentItem OriginalItem { get; set; } // <--- Referencia al item completo
         public string DisplayTitle { get; set; }
         public string Subtitle { get; set; }
         public string GradientStartColor { get; set; }

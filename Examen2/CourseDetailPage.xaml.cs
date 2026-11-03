@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Examen2.Data;
 using Examen2.ViewModels;
 
@@ -5,167 +6,229 @@ namespace Examen2;
 
 public partial class CourseDetailPage : ContentPage
 {
-    private readonly Course _course;
+    public Course Course { get; set; }
+    public ObservableCollection<FeedPostViewModel> FeedPosts { get; set; } = new();
+    public ObservableCollection<FeedPostViewModel> AssignmentPosts { get; set; } = new();
+
     private DatabaseService _databaseService;
     private MainViewModel _mainViewModel;
 
-    public CourseDetailPage(Course course)
+    public CourseDetailPage(Course course, DatabaseService databaseService = null, MainViewModel mainViewModel = null)
     {
         InitializeComponent();
-        _course = course;
-        BindingContext = _course;
+        Course = course;
+        _databaseService = databaseService;
+        _mainViewModel = mainViewModel;
+        BindingContext = this;
     }
 
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-
-        // Inicialización segura de servicios
-        var services = Application.Current?.Handler?.MauiContext?.Services;
-        _databaseService ??= services?.GetService<DatabaseService>();
-        _mainViewModel ??= services?.GetService<MainViewModel>();
-
-        await LoadContentAsync();
-        await LoadTeachersAsync();
+        EnsureServices();
+        await LoadCourseContentAsync();
     }
 
-    private async Task LoadContentAsync()
+    private void EnsureServices()
     {
-        if (_databaseService != null)
+        _databaseService ??= Handler?.MauiContext?.Services.GetService<DatabaseService>()
+                           ?? Application.Current?.Handler?.MauiContext?.Services.GetService<DatabaseService>();
+
+        _mainViewModel ??= Handler?.MauiContext?.Services.GetService<MainViewModel>()
+                         ?? Application.Current?.Handler?.MauiContext?.Services.GetService<MainViewModel>();
+    }
+
+    private async Task LoadCourseContentAsync()
+    {
+        EnsureServices();
+
+        if (_databaseService == null || Course == null) return;
+
+        var items = await _databaseService.GetCourseContentItemsAsync(Course.Id);
+
+        FeedPosts.Clear();
+        AssignmentPosts.Clear();
+
+        foreach (var item in items)
         {
-            var items = await _databaseService.GetCourseContentItemsAsync(_course.Id);
+            var vm = new FeedPostViewModel(item);
+            FeedPosts.Add(vm);
 
-            // 1. Tablón (Todo)
-            LstTablonItems.ItemsSource = items;
-
-            // 2. Trabajos (Agrupados por Unidad)
-            var trabajos = items.Where(i => i.ItemType == "Tarea" || i.ItemType == "Material").ToList();
-            var units = await _databaseService.GetCourseUnitsAsync(_course.Id);
-
-            var groupedList = new List<UnitGroup>();
-
-            foreach (var unit in units)
+            if (item.ItemType == "Tarea")
             {
-                var unitItems = trabajos.Where(t => t.UnitId == unit.Id).ToList();
-                if (unitItems.Any())
-                {
-                    groupedList.Add(new UnitGroup(unit.Name, unitItems));
-                }
+                AssignmentPosts.Add(vm);
             }
-
-            // Agregar los que no tienen unidad asignada
-            var unassigned = trabajos.Where(t => t.UnitId == null).ToList();
-            if (unassigned.Any())
-            {
-                groupedList.Add(new UnitGroup("Otras actividades", unassigned));
-            }
-
-            LstTrabajoItems.ItemsSource = groupedList;
         }
     }
 
-    private async Task LoadTeachersAsync()
+    // NAVEGACIÓN DE PESTAÑAS
+    private void OnTabNovedadesTapped(object sender, EventArgs e)
     {
-        if (_databaseService != null)
+        SetTab(ViewNovedades, TabNovedadesLabel, TabNovedadesIndicator);
+    }
+
+    private void OnTabTrabajosTapped(object sender, EventArgs e)
+    {
+        SetTab(ViewTrabajos, TabTrabajosLabel, TabTrabajosIndicator);
+    }
+
+    private void OnTabPersonasTapped(object sender, EventArgs e)
+    {
+        SetTab(ViewPersonas, TabPersonasLabel, TabPersonasIndicator);
+    }
+
+    private void SetTab(ScrollView activeView, Label activeLabel, BoxView activeIndicator)
+    {
+        ViewNovedades.IsVisible = (activeView == ViewNovedades);
+        ViewTrabajos.IsVisible = (activeView == ViewTrabajos);
+        ViewPersonas.IsVisible = (activeView == ViewPersonas);
+
+        Color inactiveColor = Color.FromArgb("#64748B");
+        Color activeColor = Color.FromArgb("#5EEAD4");
+
+        TabNovedadesLabel.TextColor = inactiveColor;
+        TabNovedadesIndicator.Color = Colors.Transparent;
+        TabTrabajosLabel.TextColor = inactiveColor;
+        TabTrabajosIndicator.Color = Colors.Transparent;
+        TabPersonasLabel.TextColor = inactiveColor;
+        TabPersonasIndicator.Color = Colors.Transparent;
+
+        activeLabel.TextColor = activeColor;
+        activeIndicator.Color = activeColor;
+    }
+
+    // ACCIONES DE BOTONES
+    private async void OnBackButtonClicked(object sender, EventArgs e)
+    {
+        await Navigation.PopAsync();
+    }
+
+    private async void OnVideoCallClicked(object sender, EventArgs e)
+    {
+        await DisplayAlert("Videollamada", "Iniciando sesión de videollamada para la clase...", "OK");
+    }
+
+    private async void OnCourseInfoClicked(object sender, EventArgs e)
+    {
+        await DisplayAlert("Información del Curso", $"{Course.CourseName}\nProfesor: {Course.TeacherName}", "OK");
+    }
+
+    private async void OnCreatePostTapped(object sender, EventArgs e)
+    {
+        await ShowCreateOptionsAsync();
+    }
+
+    private async void OnCreatePostOptionsClicked(object sender, EventArgs e)
+    {
+        await ShowCreateOptionsAsync();
+    }
+
+    private async Task ShowCreateOptionsAsync()
+    {
+        EnsureServices(); // Guarda de seguridad antes de validar
+
+        if (_databaseService == null || _mainViewModel == null || Course == null)
         {
-            var teachers = await _databaseService.GetCourseTeachersAsync(_course.Id);
-            LstTeachers.ItemsSource = teachers;
+            await DisplayAlert("Error", "No se pudo acceder al servicio de datos.", "OK");
+            return;
+        }
+
+        string action = await DisplayActionSheet(
+            "¿Qué deseas publicar?",
+            "Cancelar",
+            null,
+            "📋  Crear Tarea",
+            "📖  Crear Material",
+            "📢  Crear Anuncio");
+
+        string selectedType = action switch
+        {
+            "📋  Crear Tarea" => "Tarea",
+            "📖  Crear Material" => "Material",
+            "📢  Crear Anuncio" => "Anuncio",
+            _ => null
+        };
+
+        if (selectedType != null)
+        {
+            await Navigation.PushAsync(new CreateContentPage(Course.Id, selectedType, _databaseService, _mainViewModel));
         }
     }
 
-    // --- CAMBIO DE PESTAÑAS (NAVEGACIÓN INFERIOR) ---
-    private void OnTablonTabClicked(object sender, EventArgs e)
+    private async void OnFeedPostTapped(object sender, EventArgs e)
     {
-        ViewTablon.IsVisible = true;
-        ViewTrabajo.IsVisible = false;
-        ViewPersonas.IsVisible = false;
-
-        BtnTabTablon.TextColor = Color.FromArgb("#1A73E8");
-        BtnTabTrabajo.TextColor = Color.FromArgb("#5F6368");
-        BtnTabPersonas.TextColor = Color.FromArgb("#5F6368");
-    }
-
-    private void OnTrabajoTabClicked(object sender, EventArgs e)
-    {
-        ViewTablon.IsVisible = false;
-        ViewTrabajo.IsVisible = true;
-        ViewPersonas.IsVisible = false;
-
-        BtnTabTablon.TextColor = Color.FromArgb("#5F6368");
-        BtnTabTrabajo.TextColor = Color.FromArgb("#1A73E8");
-        BtnTabPersonas.TextColor = Color.FromArgb("#5F6368");
-    }
-
-    private void OnPersonasTabClicked(object sender, EventArgs e)
-    {
-        ViewTablon.IsVisible = false;
-        ViewTrabajo.IsVisible = false;
-        ViewPersonas.IsVisible = true;
-
-        BtnTabTablon.TextColor = Color.FromArgb("#5F6368");
-        BtnTabTrabajo.TextColor = Color.FromArgb("#5F6368");
-        BtnTabPersonas.TextColor = Color.FromArgb("#1A73E8");
-    }
-
-    private async void OnContentItemTapped(object sender, EventArgs e)
-    {
+        EnsureServices();
         var border = sender as Border;
-        var item = border?.BindingContext as ClassContentItem;
-
-        if (item == null) return;
-
-        // Los anuncios ya se muestran completos; Materiales y Tareas abren la pantalla de detalle
-        if (item.ItemType == "Material" || item.ItemType == "Tarea")
+        var vm = border?.BindingContext as FeedPostViewModel;
+        if (vm != null)
         {
-            await Navigation.PushAsync(new ContentDetailPage(item, _databaseService, _mainViewModel));
+            await Navigation.PushAsync(new ContentDetailPage(vm.SourceItem, _databaseService, _mainViewModel));
         }
     }
 
-    private async void OnOpenAttachmentDirectly(object sender, EventArgs e)
+    private void OnPostOptionsClicked(object sender, EventArgs e)
     {
-        var btn = sender as Button;
-        var item = btn?.BindingContext as ClassContentItem;
+        // Opciones secundarias del post
+    }
+}
 
-        if (item != null && !string.IsNullOrEmpty(item.AttachedFilePath) && File.Exists(item.AttachedFilePath))
+// MODELO DE VISTA PARA FEED DE PUBLICACIONES (CON GRADIENTES DINÁMICOS)
+public class FeedPostViewModel
+{
+    public ClassContentItem SourceItem { get; }
+
+    public string Title => $"{SourceItem.ItemType}: {SourceItem.Title}";
+    public string DateFormatted => SourceItem.CreatedAt.ToString("dd 'de' MMM.");
+    public bool IsAssignment => SourceItem.ItemType == "Tarea";
+    public string DueDateText => SourceItem.DueDate.HasValue ? $"Fecha de entrega: {SourceItem.DueDate.Value:dd/MM HH:mm}" : "";
+    public string CommentsCountText => "Agregar un comentario de clase";
+
+    public string IconSymbol => SourceItem.ItemType switch
+    {
+        "Tarea" => "📋",
+        "Material" => "📖",
+        _ => "📢"
+    };
+
+    public Color IconBgColor => SourceItem.ItemType switch
+    {
+        "Tarea" => Color.FromArgb("#D93025"),
+        "Material" => Color.FromArgb("#1A73E8"),
+        _ => Color.FromArgb("#1E8E3E")
+    };
+
+    public Brush CardGradientBrush
+    {
+        get
         {
-            await Launcher.Default.OpenAsync(new OpenFileRequest
+            var brush = new LinearGradientBrush
             {
-                File = new ReadOnlyFile(item.AttachedFilePath)
-            });
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(0, 1)
+            };
+
+            if (SourceItem.ItemType == "Tarea") // ROJO
+            {
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#FADBD8"), 0.0f));
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#FFFFFF"), 0.8f));
+            }
+            else if (SourceItem.ItemType == "Material") // AZUL
+            {
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#D6EAF8"), 0.0f));
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#FFFFFF"), 0.8f));
+            }
+            else // ANUNCIO / AVISO - VERDE
+            {
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#D1F2EB"), 0.0f));
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#FFFFFF"), 0.8f));
+            }
+
+            return brush;
         }
     }
 
-    // --- MENÚ PARA CREAR CONTENIDO (ANUNCIO / MATERIAL / TAREA) ---
-    private async void OnCreateContentClicked(object sender, EventArgs e)
+    public FeedPostViewModel(ClassContentItem item)
     {
-        if (_databaseService == null || _mainViewModel == null)
-            return;
-
-        string action = await DisplayActionSheet("Crear en la clase", "Cancelar", null, "Anuncio", "Material", "Tarea");
-
-        if (action == "Anuncio" || action == "Material" || action == "Tarea")
-        {
-            await Navigation.PushAsync(new CreateContentPage(_course.Id, action, _databaseService, _mainViewModel));
-        }
-    }
-
-    private async void OnAddTeacherClicked(object sender, EventArgs e)
-    {
-        if (_databaseService == null)
-            return;
-
-        string input = await DisplayPromptAsync("Añadir Profesor",
-            "Ingresa el correo o usuario del profesor:",
-            "Añadir", "Cancelar");
-
-        if (string.IsNullOrWhiteSpace(input)) return;
-
-        var result = await _databaseService.AddTeacherToCourseAsync(_course.Id, input.Trim());
-        await DisplayAlert("Resultado", result.Message, "OK");
-
-        if (result.Success)
-        {
-            await LoadTeachersAsync();
-        }
+        SourceItem = item;
     }
 }

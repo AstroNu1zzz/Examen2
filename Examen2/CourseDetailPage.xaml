@@ -2,238 +2,358 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Examen2.CourseDetailPage"
-             BackgroundColor="#F8F9FA"
-             Title="Detalle del Curso">
+             Title="Detalle del Curso"
+             BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#12161A}">
 
-    <Grid RowDefinitions="*, Auto">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <LinearGradientBrush x:Key="WorkflowBrandBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#5C93F9" Offset="0.0" />
+                <GradientStop Color="#5EEAD4" Offset="0.6" />
+                <GradientStop Color="#86EFAC" Offset="1.0" />
+            </LinearGradientBrush>
 
-        <!-- ÁREA DE CONTENIDO VARIABLE DE PESTAÑAS -->
-        <Grid Grid.Row="0">
+            <Shadow x:Key="FeedShadow" Brush="#000000" Opacity="0.08" Offset="0,2" Radius="8" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
-            <!-- PESTAÑA 1: TABLÓN / NOVEDADES -->
-            <ScrollView x:Name="ViewTablon" Padding="16" IsVisible="True">
-                <VerticalStackLayout Spacing="16">
-                    <!-- Banner de la clase estilo WorkFlow -->
-                    <Border BackgroundColor="{Binding ThemeColor}" HeightRequest="140" StrokeThickness="0">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="12" />
-                        </Border.StrokeShape>
+    <Grid RowDefinitions="Auto, *, Auto">
+
+        <!-- BARRA SUPERIOR FIJA -->
+        <Border Grid.Row="0"
+                Padding="16,10"
+                StrokeThickness="0"
+                BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+            <Border.Shadow>
+                <Shadow Brush="#000000" Opacity="0.06" Offset="0,2" Radius="6" />
+            </Border.Shadow>
+
+            <Grid ColumnDefinitions="Auto, *, Auto, Auto" ColumnSpacing="12" VerticalOptions="Center">
+                <ImageButton Grid.Column="0"
+                             Source="icon_arrow_back.png"
+                             WidthRequest="24"
+                             HeightRequest="24"
+                             BackgroundColor="Transparent"
+                             Clicked="OnBackButtonClicked" />
+
+                <Label Grid.Column="1"
+                       Text="{Binding Course.CourseName}"
+                       FontSize="18"
+                       FontAttributes="Bold"
+                       VerticalOptions="Center"
+                       LineBreakMode="TailTruncation"
+                       TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+
+                <ImageButton Grid.Column="2"
+                             Source="icon_videocam.png"
+                             WidthRequest="22"
+                             HeightRequest="22"
+                             BackgroundColor="Transparent"
+                             Clicked="OnVideoCallClicked" />
+
+                <ImageButton Grid.Column="3"
+                             Source="icon_info.png"
+                             WidthRequest="22"
+                             HeightRequest="22"
+                             BackgroundColor="Transparent"
+                             Clicked="OnCourseInfoClicked" />
+            </Grid>
+        </Border>
+
+        <!-- CONTENEDOR CENTRAL -->
+        <Grid Grid.Row="1">
+
+            <!-- VISTA 1: NOVEDADES -->
+            <ScrollView x:Name="ViewNovedades" IsVisible="True">
+                <VerticalStackLayout Spacing="16" Padding="16,12,16,24">
+
+                    <!-- Banner de Portada -->
+                    <Border HeightRequest="150"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 20"
+                            Shadow="{StaticResource FeedShadow}">
                         <Grid>
-                            <!-- Fondo con opacidad -->
-                            <Image Source="{Binding BannerImagePath}" Aspect="AspectFill" Opacity="0.6" />
-                            <!-- Contenido del Banner -->
-                            <VerticalStackLayout VerticalOptions="End" Padding="20">
-                                <Label Text="{Binding CourseName}" FontSize="24" FontAttributes="Bold" TextColor="White" />
-                                <Label Text="{Binding PrimaryTeacherName, StringFormat='Profesor: {0}'}" FontSize="13" TextColor="White" Opacity="0.9" />
-                            </VerticalStackLayout>
+                            <Image Source="{Binding Course.BannerImagePath}"
+                                   Aspect="AspectFill"
+                                   HorizontalOptions="Fill"
+                                   VerticalOptions="Fill" />
+
+                            <Border StrokeThickness="0">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#30000000" Offset="0.0" />
+                                        <GradientStop Color="#800F172A" Offset="0.5" />
+                                        <GradientStop Color="#F00F172A" Offset="1.0" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+
+                                <Grid Padding="20" RowDefinitions="*, Auto">
+                                    <VerticalStackLayout Grid.Row="1" Spacing="4">
+                                        <Label Text="{Binding Course.CourseName}" 
+                                               FontSize="24" 
+                                               FontAttributes="Bold" 
+                                               TextColor="White" />
+                                        <HorizontalStackLayout Spacing="4">
+                                            <Label Text="Prof. " FontSize="13" FontAttributes="Bold" TextColor="#5EEAD4" />
+                                            <Label Text="{Binding Course.TeacherName}" FontSize="13" FontAttributes="Bold" TextColor="#5EEAD4" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </Border>
                         </Grid>
                     </Border>
 
-                    <!-- Lista de publicaciones en el Tablón -->
-                    <Label Text="Tablón de Novedades" FontSize="16" FontAttributes="Bold" TextColor="#202124" Margin="0,10,0,0" />
+                    <!-- Caja Anunciar -->
+                    <Border StrokeThickness="1"
+                            Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
+                            StrokeShape="RoundRectangle 14"
+                            Padding="14,12"
+                            BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}"
+                            Shadow="{StaticResource FeedShadow}">
+                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="12" VerticalOptions="Center">
+                            <Border Grid.Column="0"
+                                    WidthRequest="36"
+                                    HeightRequest="36"
+                                    StrokeShape="RoundRectangle 18"
+                                    StrokeThickness="1.5"
+                                    Stroke="#5EEAD4">
+                                <Label Text="✏️" FontSize="16" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
 
-                    <CollectionView x:Name="LstTablonItems" SelectionMode="None">
-                        <CollectionView.ItemsLayout>
-                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
-                        </CollectionView.ItemsLayout>
-                        <CollectionView.ItemTemplate>
+                            <Label Grid.Column="1"
+                                   Text="Anunciar algo a tu clase..."
+                                   FontSize="14"
+                                   VerticalOptions="Center"
+                                   TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnCreatePostTapped" />
+                            </Grid.GestureRecognizers>
+                        </Grid>
+                    </Border>
+
+                    <!-- Feed Novedades -->
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding FeedPosts}" Spacing="12">
+                        <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <Border BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1" Padding="16">
-                                    <Border.StrokeShape>
-                                        <RoundRectangle CornerRadius="10" />
-                                    </Border.StrokeShape>
+                                <Border StrokeThickness="1"
+                                        Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
+                                        StrokeShape="RoundRectangle 14"
+                                        Padding="16"
+                                        Background="{Binding CardGradientBrush}"
+                                        Shadow="{StaticResource FeedShadow}">
+
                                     <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="OnContentItemTapped" />
+                                        <TapGestureRecognizer Tapped="OnFeedPostTapped" />
                                     </Border.GestureRecognizers>
 
-                                    <VerticalStackLayout Spacing="6">
-                                        <Grid ColumnDefinitions="*, Auto">
-                                            <Label Text="{Binding AuthorName}" FontAttributes="Bold" FontSize="13" TextColor="#48E5C2" />
-                                            <Label Grid.Column="1" Text="{Binding ItemType}" FontSize="11" FontAttributes="Bold" TextColor="#1E3A5F" />
+                                    <Grid RowDefinitions="Auto, Auto, Auto" RowSpacing="10">
+                                        <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto" ColumnSpacing="14" VerticalOptions="Center">
+                                            <Border Grid.Column="0"
+                                                    WidthRequest="42"
+                                                    HeightRequest="42"
+                                                    StrokeShape="RoundRectangle 21"
+                                                    StrokeThickness="0"
+                                                    BackgroundColor="{Binding IconBgColor}">
+                                                <Label Text="{Binding IconSymbol}"
+                                                       FontSize="18"
+                                                       TextColor="White"
+                                                       HorizontalOptions="Center"
+                                                       VerticalOptions="Center" />
+                                            </Border>
+
+                                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                                <Label Text="{Binding Title}"
+                                                       FontSize="14"
+                                                       FontAttributes="Bold"
+                                                       TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                                                <Label Text="{Binding DateFormatted}"
+                                                       FontSize="12"
+                                                       TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+                                            </VerticalStackLayout>
+
+                                            <ImageButton Grid.Column="2"
+                                                         Source="icon_more_vert.png"
+                                                         WidthRequest="20"
+                                                         HeightRequest="20"
+                                                         BackgroundColor="Transparent"
+                                                         Clicked="OnPostOptionsClicked" />
                                         </Grid>
 
-                                        <Label Text="{Binding Title}" FontSize="16" FontAttributes="Bold" TextColor="#202124" />
-                                        <Label Text="{Binding Description}" FontSize="13" TextColor="#5F6368" MaxLines="2" LineBreakMode="TailTruncation" />
+                                        <HorizontalStackLayout Grid.Row="1" IsVisible="{Binding IsAssignment}">
+                                            <Border Padding="8,4"
+                                                    StrokeThickness="0"
+                                                    StrokeShape="RoundRectangle 6"
+                                                    BackgroundColor="#FEE2E2">
+                                                <Label Text="{Binding DueDateText}"
+                                                       FontSize="11"
+                                                       FontAttributes="Bold"
+                                                       TextColor="#D93025" />
+                                            </Border>
+                                        </HorizontalStackLayout>
 
-                                        <!-- Botón para ver archivo en anuncios -->
-                                        <Button Text="📎 Abrir archivo adjunto"
-                                                Clicked="OnOpenAttachmentDirectly"
-                                                BackgroundColor="#F1F3F4"
-                                                TextColor="#1A73E8"
-                                                HeightRequest="36"
-                                                FontSize="12"
-                                                Padding="8,0"
-                                                Margin="0,6,0,0">
-                                            <Button.Triggers>
-                                                <DataTrigger TargetType="Button" Binding="{Binding AttachedFilePath}" Value="{x:Null}">
-                                                    <Setter Property="IsVisible" Value="False" />
-                                                </DataTrigger>
-                                                <DataTrigger TargetType="Button" Binding="{Binding AttachedFilePath}" Value="">
-                                                    <Setter Property="IsVisible" Value="False" />
-                                                </DataTrigger>
-                                            </Button.Triggers>
-                                        </Button>
-                                    </VerticalStackLayout>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-                </VerticalStackLayout>
-            </ScrollView>
+                                        <Grid Grid.Row="2" ColumnDefinitions="*, Auto" Margin="0,4,0,0">
+                                            <BoxView HeightRequest="1" 
+                                                     Color="{AppThemeBinding Light=#F1F5F9, Dark=#272E38}" 
+                                                     VerticalOptions="Center" />
 
-            <!-- PESTAÑA 2: TRABAJO DE CLASE (AGRUPADO POR UNIDAD) -->
-            <ScrollView x:Name="ViewTrabajo" Padding="16" IsVisible="False">
-                <VerticalStackLayout Spacing="16">
-                    <Grid ColumnDefinitions="*, Auto">
-                        <Label Text="Plan de Actividades" FontSize="18" FontAttributes="Bold" TextColor="#202124" VerticalOptions="Center" />
-                        <Label Grid.Column="1" Text="Filtros" FontSize="12" TextColor="#48E5C2" VerticalOptions="Center" />
-                    </Grid>
-
-                    <CollectionView x:Name="LstTrabajoItems" IsGrouped="True" SelectionMode="None">
-
-                        <!-- HEADER DEL GRUPO (Nombre de la Unidad) -->
-                        <CollectionView.GroupHeaderTemplate>
-                            <DataTemplate>
-                                <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" TextColor="#48E5C2" Margin="0,15,0,10" />
-                            </DataTemplate>
-                        </CollectionView.GroupHeaderTemplate>
-
-                        <!-- TARJETA DEL ITEM DE TRABAJO/MATERIAL -->
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Border BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1" Padding="12" Margin="0,0,0,10">
-                                    <Border.StrokeShape>
-                                        <RoundRectangle CornerRadius="10" />
-                                    </Border.StrokeShape>
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Tapped="OnContentItemTapped" />
-                                    </Border.GestureRecognizers>
-
-                                    <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="15">
-                                        <!-- Ícono Oscuro -->
-                                        <Border Grid.Column="0" WidthRequest="44" HeightRequest="44" BackgroundColor="#1E3A5F" StrokeThickness="0" VerticalOptions="Center">
-                                            <Border.StrokeShape>
-                                                <RoundRectangle CornerRadius="22" />
-                                            </Border.StrokeShape>
-                                            <Label Text="📋" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
-                                        </Border>
-
-                                        <!-- Detalles -->
-                                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                            <Label Text="{Binding Title}" FontSize="15" FontAttributes="Bold" TextColor="#202124" />
-                                            <HorizontalStackLayout Spacing="6">
-                                                <Label Text="{Binding DueDate, StringFormat='Vence: {0:dd/MM/yyyy}'}" FontSize="12" TextColor="#D93025" />
-                                                <Label Text="•" FontSize="12" TextColor="#9AA0A6" />
-                                                <Label Text="{Binding Points, StringFormat='{0} pts'}" FontSize="12" TextColor="#5F6368" />
-                                            </HorizontalStackLayout>
-                                        </VerticalStackLayout>
-
-                                        <!-- Etiqueta de Tipo o Estado -->
-                                        <Border Grid.Column="2" BackgroundColor="#1E3A5F" StrokeThickness="0" VerticalOptions="Center" Padding="12,6">
-                                            <Border.StrokeShape>
-                                                <RoundRectangle CornerRadius="12" />
-                                            </Border.StrokeShape>
-                                            <Label Text="{Binding ItemType}" FontSize="11" TextColor="White" FontAttributes="Bold" />
-                                        </Border>
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding CommentsCountText}"
+                                                   FontSize="12"
+                                                   Margin="10,0,0,0"
+                                                   TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+                                        </Grid>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+
                 </VerticalStackLayout>
             </ScrollView>
 
-            <!-- PESTAÑA 3: PERSONAS -->
-            <ScrollView x:Name="ViewPersonas" Padding="16" IsVisible="False">
-                <VerticalStackLayout Spacing="20">
-                    <Label Text="Profesores" FontSize="18" FontAttributes="Bold" TextColor="#48E5C2" />
+            <!-- VISTA 2: TRABAJOS DE CLASE -->
+            <ScrollView x:Name="ViewTrabajos" IsVisible="False">
+                <VerticalStackLayout Spacing="20" Padding="16,16,16,24">
+                    <Label Text="Trabajos y Actividades" FontSize="18" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
 
-                    <CollectionView x:Name="LstTeachers">
-                        <CollectionView.ItemTemplate>
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding AssignmentPosts}" Spacing="12">
+                        <BindableLayout.ItemTemplate>
                             <DataTemplate>
-                                <Border BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1" Padding="12" Margin="0,0,0,10">
-                                    <Border.StrokeShape>
-                                        <RoundRectangle CornerRadius="8" />
-                                    </Border.StrokeShape>
-                                    <HorizontalStackLayout Spacing="12">
-                                        <!-- Avatar circular vacío o con inicial -->
-                                        <Border WidthRequest="40" HeightRequest="40" BackgroundColor="#F1F3F4" Stroke="#48E5C2" StrokeThickness="2" VerticalOptions="Center">
-                                            <Border.StrokeShape>
-                                                <RoundRectangle CornerRadius="20" />
-                                            </Border.StrokeShape>
-                                            <Label Text="👤" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                                <Border StrokeThickness="1"
+                                        Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
+                                        StrokeShape="RoundRectangle 14"
+                                        Padding="14"
+                                        Background="{Binding CardGradientBrush}">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnFeedPostTapped" />
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12" VerticalOptions="Center">
+                                        <Border Grid.Column="0" WidthRequest="38" HeightRequest="38" StrokeShape="RoundRectangle 19" BackgroundColor="{Binding IconBgColor}" StrokeThickness="0">
+                                            <Label Text="{Binding IconSymbol}" FontSize="16" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
                                         </Border>
-                                        <VerticalStackLayout VerticalOptions="Center">
-                                            <Label Text="{Binding Username}" FontSize="15" FontAttributes="Bold" TextColor="#202124" />
-                                            <Label Text="{Binding Email}" FontSize="12" TextColor="#5F6368" />
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                            <Label Text="{Binding Title}" FontSize="14" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                                            <Label Text="{Binding DueDateText}" FontSize="11" TextColor="#D93025" IsVisible="{Binding IsAssignment}" />
                                         </VerticalStackLayout>
-                                    </HorizontalStackLayout>
+                                    </Grid>
                                 </Border>
                             </DataTemplate>
-                        </CollectionView.ItemTemplate>
-                    </CollectionView>
-
-                    <BoxView HeightRequest="1" Color="#E0E0E0" />
-
-                    <Grid ColumnDefinitions="*, Auto">
-                        <Label Text="Compañeros de clase" FontSize="18" FontAttributes="Bold" TextColor="#1E3A5F" />
-                        <Button Grid.Column="1" Text="＋ Añadir" Clicked="OnAddTeacherClicked" BackgroundColor="Transparent" TextColor="#48E5C2" FontSize="12" />
-                    </Grid>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </ScrollView>
 
-            <!-- BOTÓN FLOTANTE MÁS (+) -->
-            <Button Text="＋ Crear"
-                    Clicked="OnCreateContentClicked"
-                    BackgroundColor="#48E5C2"
-                    TextColor="White"
-                    FontAttributes="Bold"
-                    FontSize="15"
-                    CornerRadius="25"
-                    HeightRequest="50"
-                    Padding="20,0"
-                    HorizontalOptions="End"
+            <!-- VISTA 3: PERSONAS -->
+            <ScrollView x:Name="ViewPersonas" IsVisible="False">
+                <VerticalStackLayout Spacing="20" Padding="16,16,16,24">
+                    <Label Text="Profesor" FontSize="18" FontAttributes="Bold" TextColor="#5EEAD4" />
+                    <Border StrokeThickness="1" Stroke="#E2E8F0" StrokeShape="RoundRectangle 12" Padding="14,10" BackgroundColor="White">
+                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="12">
+                            <Label Grid.Column="0" Text="👨‍🏫" FontSize="24" VerticalOptions="Center" />
+                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                <Label Text="{Binding Course.TeacherName}" FontAttributes="Bold" FontSize="14" TextColor="#0F172A" />
+                                <Label Text="Profesor Titular" FontSize="12" TextColor="#64748B" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <!-- BOTÓN FLOTANTE MÁS (+) PARA PUBLICAR -->
+            <Border HorizontalOptions="End"
                     VerticalOptions="End"
-                    Margin="0,0,20,20" />
+                    Margin="0,0,20,20"
+                    WidthRequest="56"
+                    HeightRequest="56"
+                    StrokeShape="RoundRectangle 28"
+                    StrokeThickness="0"
+                    Background="{StaticResource WorkflowBrandBrush}"
+                    Shadow="{StaticResource FeedShadow}"
+                    ZIndex="99">
+                <Grid>
+                    <Label Text="+"
+                           FontSize="32"
+                           FontAttributes="Bold"
+                           TextColor="#0F172A"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           Margin="0,-2,0,0" />
+                    <Button BackgroundColor="Transparent"
+                            Clicked="OnCreatePostOptionsClicked" />
+                </Grid>
+            </Border>
+
         </Grid>
 
-        <!-- BARRA DE NAVEGACIÓN INFERIOR ESTILO WORKFLOW -->
-        <Border Grid.Row="1" BackgroundColor="White" Stroke="#E0E0E0" StrokeThickness="1" Padding="0,5">
+        <!-- BARRA DE NAVEGACIÓN INFERIOR -->
+        <Border Grid.Row="2"
+                StrokeThickness="1"
+                Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#272E38}"
+                BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}"
+                Padding="0,6,0,10">
             <Grid ColumnDefinitions="*, *, *">
-                <VerticalStackLayout Grid.Column="0" HorizontalOptions="Center">
-                    <Label Text="📢" FontSize="18" HorizontalOptions="Center" />
-                    <Button x:Name="BtnTabTablon"
-                            Text="Novedades"
-                            Clicked="OnTablonTabClicked"
-                            BackgroundColor="Transparent"
-                            TextColor="#48E5C2"
-                            FontSize="12"
-                            FontAttributes="Bold"
-                            Padding="0" HeightRequest="30" />
+
+                <!-- Pestaña 1: Novedades -->
+                <VerticalStackLayout Grid.Column="0" Spacing="4" HorizontalOptions="Center">
+                    <Label Text="📢" FontSize="20" HorizontalOptions="Center" />
+                    <Label x:Name="TabNovedadesLabel"
+                           Text="Novedades" 
+                           FontSize="12" 
+                           FontAttributes="Bold" 
+                           TextColor="#5EEAD4" 
+                           HorizontalOptions="Center" />
+                    <BoxView x:Name="TabNovedadesIndicator"
+                             HeightRequest="3" 
+                             WidthRequest="28" 
+                             Color="#5EEAD4" 
+                             CornerRadius="1.5" />
+
+                    <VerticalStackLayout.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnTabNovedadesTapped" />
+                    </VerticalStackLayout.GestureRecognizers>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center">
-                    <Label Text="📋" FontSize="18" HorizontalOptions="Center" />
-                    <Button x:Name="BtnTabTrabajo"
-                            Text="Trabajos"
-                            Clicked="OnTrabajoTabClicked"
-                            BackgroundColor="Transparent"
-                            TextColor="#5F6368"
-                            FontSize="12"
-                            Padding="0" HeightRequest="30" />
+                <!-- Pestaña 2: Trabajos -->
+                <VerticalStackLayout Grid.Column="1" Spacing="4" HorizontalOptions="Center">
+                    <Label Text="📋" FontSize="20" HorizontalOptions="Center" />
+                    <Label x:Name="TabTrabajosLabel"
+                           Text="Trabajos" 
+                           FontSize="12" 
+                           TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" 
+                           HorizontalOptions="Center" />
+                    <BoxView x:Name="TabTrabajosIndicator"
+                             HeightRequest="3" 
+                             WidthRequest="28" 
+                             Color="Transparent" 
+                             CornerRadius="1.5" />
+
+                    <VerticalStackLayout.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnTabTrabajosTapped" />
+                    </VerticalStackLayout.GestureRecognizers>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center">
-                    <Label Text="👥" FontSize="18" HorizontalOptions="Center" />
-                    <Button x:Name="BtnTabPersonas"
-                            Text="Personas"
-                            Clicked="OnPersonasTabClicked"
-                            BackgroundColor="Transparent"
-                            TextColor="#5F6368"
-                            FontSize="12"
-                            Padding="0" HeightRequest="30" />
+                <!-- Pestaña 3: Personas -->
+                <VerticalStackLayout Grid.Column="2" Spacing="4" HorizontalOptions="Center">
+                    <Label Text="👥" FontSize="20" HorizontalOptions="Center" />
+                    <Label x:Name="TabPersonasLabel"
+                           Text="Personas" 
+                           FontSize="12" 
+                           TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" 
+                           HorizontalOptions="Center" />
+                    <BoxView x:Name="TabPersonasIndicator"
+                             HeightRequest="3" 
+                             WidthRequest="28" 
+                             Color="Transparent" 
+                             CornerRadius="1.5" />
+
+                    <VerticalStackLayout.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnTabPersonasTapped" />
+                    </VerticalStackLayout.GestureRecognizers>
                 </VerticalStackLayout>
+
             </Grid>
         </Border>
+
     </Grid>
 </ContentPage>

@@ -79,11 +79,9 @@ public partial class CreateContentPage : ContentPage
 
         if (success)
         {
+            // Refrescar el ViewModel global para que el tablón reciba los datos nuevos inmediatamente
+            await _mainViewModel.RefreshCoursesAsync();
             await Navigation.PopAsync();
-        }
-        else
-        {
-            await DisplayAlert("Error", "No se pudo guardar la publicación.", "OK");
         }
     }
 
