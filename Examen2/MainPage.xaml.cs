@@ -5,10 +5,15 @@ namespace Examen2;
 
 public partial class MainPage : ContentPage
 {
-    public MainPage(MainViewModel viewModel)
+    private readonly DatabaseService _databaseService;
+    private readonly MainViewModel _mainViewModel;
+
+    public MainPage(DatabaseService databaseService, MainViewModel mainViewModel)
     {
         InitializeComponent();
-        BindingContext = viewModel;
+        _databaseService = databaseService;
+        _mainViewModel = mainViewModel;
+        BindingContext = _mainViewModel;
     }
 
     protected override async void OnAppearing()

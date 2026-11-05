@@ -31,7 +31,7 @@
                 <!-- Campo Usuario / Correo -->
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Usuario o Correo" FontSize="12" TextColor="#5F6368" />
-                    <Entry x:Name="TxtUser"
+                    <Entry x:Name="UsernameEntry"
                            Placeholder="ejemplo@cecyt13.ipn.mx"
                            TextColor="#5F6368"/>
                 </VerticalStackLayout>
@@ -39,25 +39,27 @@
                 <!-- Campo Contraseña -->
                 <VerticalStackLayout Spacing="5">
                     <Label Text="Contraseña" FontSize="12" TextColor="#5F6368" />
-                    <Entry x:Name="TxtPassword"
+                    <Entry x:Name="PasswordEntry"
                            IsPassword="True"
                            Placeholder="12345678"
                            TextColor="#5F6368"/>
                 </VerticalStackLayout>
 
                 <!-- Botón de Ingreso -->
-                <Button Text="Siguiente"
+                <Button x:Name="LoginButton"
+                        Text="Siguiente"
                         BackgroundColor="#1A73E8"
                         TextColor="White"
                         CornerRadius="6"
                         HeightRequest="42"
                         Margin="0,10,0,0"
                         Clicked="OnLoginClicked" />
+
                 <Button Text="Crear cuenta"
-        BackgroundColor="Transparent"
-        TextColor="#1A73E8"
-        FontSize="13"
-        Clicked="OnRegisterNavigationClicked" />
+                        BackgroundColor="Transparent"
+                        TextColor="#1A73E8"
+                        FontSize="13"
+                        Clicked="OnRegisterNavigationClicked" />
             </VerticalStackLayout>
         </Border>
     </Grid>

@@ -18,7 +18,7 @@
 
                     <VerticalStackLayout Spacing="5">
                         <Label Text="Nombre de la clase (obligatorio)" FontSize="12" TextColor="#5F6368" />
-                        <Entry x:Name="TxtCourseName" Placeholder="ej. DERECHO MERCANTIL 5IM6" />
+                        <Entry x:Name="TxtCourseName" Placeholder="ej. DERECHO MERCANTIL 5IM6" TextColor="#5F6368"/>
                     </VerticalStackLayout>
 
                     <!-- Selector de Imagen de Fondo -->

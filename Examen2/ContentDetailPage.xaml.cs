@@ -9,6 +9,7 @@ public partial class ContentDetailPage : ContentPage
     private readonly DatabaseService _databaseService;
     private readonly MainViewModel _mainViewModel;
     private string _submissionFilePath;
+    private string _submittedFilePath;
 
     public ContentDetailPage(ClassContentItem item, DatabaseService databaseService, MainViewModel mainViewModel)
     {
@@ -53,6 +54,41 @@ public partial class ContentDetailPage : ContentPage
         }
     }
 
+    private async void OnPickSubmissionFileClicked(object sender, EventArgs e)
+    {
+        try
+        {
+            var result = await FilePicker.Default.PickAsync();
+            if (result != null)
+            {
+                _submittedFilePath = result.FullPath;
+                LblSubmittedFileName.Text = result.FileName;
+
+                // Mostrar la tarjeta contenedora del archivo
+                LayoutStudentAttachment.IsVisible = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Error", $"No se pudo seleccionar el archivo: {ex.Message}", "OK");
+        }
+    }
+
+    private async void OnOpenSubmittedFileClicked(object sender, EventArgs e)
+    {
+        if (!string.IsNullOrEmpty(_submittedFilePath) && System.IO.File.Exists(_submittedFilePath))
+        {
+            await Launcher.Default.OpenAsync(new OpenFileRequest
+            {
+                File = new ReadOnlyFile(_submittedFilePath)
+            });
+        }
+        else
+        {
+            await DisplayAlert("Atención", "El archivo no se encuentra disponible en este dispositivo para visualizar.", "OK");
+        }
+    }
+
     private async Task LoadStudentSubmissionAsync()
     {
         if (_mainViewModel.CurrentUser == null) return;
@@ -79,24 +115,6 @@ public partial class ContentDetailPage : ContentPage
             {
                 File = new ReadOnlyFile(_item.AttachedFilePath)
             });
-        }
-    }
-
-    private async void OnPickSubmissionFileClicked(object sender, EventArgs e)
-    {
-        try
-        {
-            var result = await FilePicker.Default.PickAsync();
-            if (result != null)
-            {
-                _submissionFilePath = result.FullPath;
-                LblSubmittedFileName.Text = $"📄 {result.FileName}";
-                LblSubmittedFileName.IsVisible = true;
-            }
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlert("Error", $"No se pudo adjuntar el archivo: {ex.Message}", "OK");
         }
     }
 

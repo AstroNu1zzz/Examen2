@@ -1,4 +1,5 @@
 ﻿using Examen2.Data;
+using Examen2.Services;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Storage;
 using SQLite;
@@ -14,6 +15,7 @@ namespace Examen2.ViewModels
     public class MainViewModel : INotifyPropertyChanged
     {
         private readonly DatabaseService _databaseService;
+        private readonly EmailService _emailService;
 
         // --- GESTIÓN DEL PERFIL DE USUARIO ---
         private User _currentUser;
@@ -83,9 +85,10 @@ namespace Examen2.ViewModels
         public ICommand DeleteCourseCommand { get; }
         public ICommand OpenActivityCommand { get; }
 
-        public MainViewModel(DatabaseService databaseService)
+        public MainViewModel(DatabaseService databaseService, EmailService emailService)
         {
             _databaseService = databaseService;
+            _emailService = emailService;
             EnrolledCourses = new ObservableCollection<Course>();
 
             NextDeadlineMessage = "No tienes ningún trabajo que entregar en los próximos 7 días";
@@ -188,17 +191,15 @@ namespace Examen2.ViewModels
 
         private void OnLogout()
         {
-            Preferences.Default.Remove("LoggedInUserId");
-            IsProfileMenuVisible = false;
-            IsDrawerVisible = false;
-            CurrentUser = null;
-            ProfileImageSource = null;
-            HasProfilePicture = false;
+            // Limpiar almacenamiento de preferencias
+            Preferences.Default.Remove("IsLoggedIn");
+            Preferences.Default.Remove("CurrentUserId");
+            Preferences.Default.Remove("Last2FAVerifiedAt");
 
-            var loginPage = Application.Current?.Handler?.MauiContext?.Services.GetService<LoginPage>();
-            if (Application.Current?.Windows.Count > 0 && loginPage != null)
+            // Redirigir a la pantalla de inicio de sesión
+            if (Application.Current != null)
             {
-                Application.Current.Windows[0].Page = new NavigationPage(loginPage);
+                Application.Current.MainPage = new NavigationPage(new LoginPage(_databaseService, _emailService, this));
             }
         }
 
@@ -216,7 +217,7 @@ namespace Examen2.ViewModels
 
             // 2. Recargar publicaciones del Tablón de Novedades Global
             var activities = await _databaseService.GetGlobalActivitiesAsync(CurrentUser.Id);
-            GlobalRecentActivities.Clear(); // O RecentPosts.Clear() según como lo nombraste
+            GlobalRecentActivities.Clear();
 
             foreach (var a in activities)
             {
@@ -239,6 +240,7 @@ namespace Examen2.ViewModels
 
                 GlobalRecentActivities.Add(new ActivityItemViewModel
                 {
+                    OriginalItem = a, // <--- LÍNEA CLAVE QUE FALTABA
                     DisplayTitle = $"{a.ItemType}: {a.Title}",
                     Subtitle = $"{courseName} • Publicado el {a.CreatedAt:dd MMM}",
                     GradientStartColor = gradient,

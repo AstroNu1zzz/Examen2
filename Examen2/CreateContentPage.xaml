@@ -16,18 +16,18 @@
                 <VerticalStackLayout Spacing="14">
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Título / Asunto" FontSize="12" TextColor="#5F6368" />
-                        <Entry x:Name="TxtTitle" Placeholder="ej. Tarea 1: Ejercicios de derivadas" />
+                        <Entry x:Name="TxtTitle" Placeholder="ej. Tarea 1: Ejercicios de derivadas" TextColor="Black"/>
                     </VerticalStackLayout>
 
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Instrucciones o contenido" FontSize="12" TextColor="#5F6368" />
-                        <Editor x:Name="TxtDescription" Placeholder="Escribe aquí los detalles..." HeightRequest="100" />
+                        <Editor x:Name="TxtDescription" Placeholder="Escribe aquí los detalles..." HeightRequest="100" TextColor="Black"/>
                     </VerticalStackLayout>
 
                     <!-- Fecha de Entrega (Solo Tarea) -->
                     <VerticalStackLayout x:Name="LayoutDueDate" Spacing="4" IsVisible="False">
                         <Label Text="Fecha de entrega" FontSize="12" TextColor="#5F6368" />
-                        <DatePicker x:Name="DpDueDate" />
+                        <DatePicker x:Name="DpDueDate" TextColor="Black"/>
                     </VerticalStackLayout>
 
                     <!-- Archivo Adjunto (PDF o Imagen) -->

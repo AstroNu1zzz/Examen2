@@ -1,3 +1,4 @@
+using Examen2.Data;
 using Examen2.ViewModels;
 using static System.Runtime.CompilerServices.RuntimeHelpers;
 
@@ -5,37 +6,34 @@ namespace Examen2;
 
 public partial class TwoFactorPage : ContentPage
 {
-    private readonly User _currentUser;
+    private readonly User _user;
     private readonly string _expectedCode;
+    private readonly DatabaseService _databaseService;
+    private readonly MainViewModel _mainViewModel;
 
-    public TwoFactorPage(User user, string expectedCode)
+    public TwoFactorPage(User user, string verificationCode, DatabaseService databaseService, MainViewModel mainViewModel)
     {
         InitializeComponent();
-        _currentUser = user;
-        _expectedCode = expectedCode;
-
-        LblEmailInfo.Text = $"Hemos enviado un código de verificación de 6 dígitos a:\n{_currentUser.Email}";
+        _user = user;
+        _expectedCode = verificationCode;
+        _databaseService = databaseService;
+        _mainViewModel = mainViewModel;
     }
 
     private async void OnVerifyClicked(object sender, EventArgs e)
     {
-        string inputCode = TxtCode.Text?.Trim();
-
-        if (inputCode == _expectedCode)
+        if (TxtCode.Text?.Trim() == _expectedCode)
         {
-            var mainViewModel = Handler.MauiContext.Services.GetService<MainViewModel>();
-            mainViewModel.SetCurrentUser(_currentUser);
+            Preferences.Default.Set("IsLoggedIn", true);
+            Preferences.Default.Set("CurrentUserId", _user.Id);
+            Preferences.Default.Set("Last2FAVerifiedAt", DateTime.UtcNow);
 
-            var mainPage = Handler.MauiContext.Services.GetService<MainPage>();
-
-            if (Application.Current?.Windows.Count > 0)
-            {
-                Application.Current.Windows[0].Page = new NavigationPage(mainPage);
-            }
+            _mainViewModel.CurrentUser = _user;
+            await Navigation.PushAsync(new MainPage(_databaseService, _mainViewModel));
         }
         else
         {
-            await DisplayAlert("Código incorrecto", "El código ingresado no coincide.", "OK");
+            await DisplayAlert("Error", "Código de verificación incorrecto.", "OK");
         }
     }
 

@@ -64,7 +64,6 @@ namespace Examen2.Data
         {
             await InitAsync();
 
-            // Buscar si la fecha de creación entra en alguna unidad existente
             var activeUnit = await _db.Table<Unit>()
                                       .Where(u => u.CourseId == item.CourseId &&
                                                   item.CreatedAt >= u.StartDate &&
@@ -84,24 +83,20 @@ namespace Examen2.Data
         {
             await InitAsync();
 
-            // Obtener los IDs de los cursos donde el usuario está inscrito o es profesor
             var teacherRelations = await _db.Table<CourseTeacher>().Where(ct => ct.UserId == userId).ToListAsync();
             var courseIds = teacherRelations.Select(ct => ct.CourseId).ToList();
 
             if (!courseIds.Any()) return new List<ClassContentItem>();
 
-            // Obtener los items de esos cursos ordenados por el más reciente
             return await _db.Table<ClassContentItem>()
                             .Where(i => courseIds.Contains(i.CourseId))
                             .OrderByDescending(i => i.CreatedAt)
-                            .Take(20) // Limitar a las 20 novedades más recientes
+                            .Take(20)
                             .ToListAsync();
         }
 
         private async Task SeedDataAsync()
         {
-            // Solo creamos el usuario de prueba inicial si la tabla está vacía.
-            // NO se insertan clases falsas.
             int userCount = await _db.Table<User>().CountAsync();
             if (userCount == 0)
             {
@@ -115,7 +110,6 @@ namespace Examen2.Data
             }
         }
 
-        // Crear clase registrando al creador como Profesor Principal
         public async Task<bool> AddCourseAsync(Course course, User primaryTeacher)
         {
             await InitAsync();
@@ -126,7 +120,6 @@ namespace Examen2.Data
             int rows = await _db.InsertAsync(course);
             if (rows > 0)
             {
-                // Asignar en la tabla de relacion de profesores
                 var relation = new CourseTeacher
                 {
                     CourseId = course.Id,
@@ -139,7 +132,6 @@ namespace Examen2.Data
             return false;
         }
 
-        // Obtener solo las clases donde el usuario es profesor (principal o secundario)
         public async Task<List<Course>> GetCoursesAsync(int userId)
         {
             await InitAsync();
@@ -155,12 +147,10 @@ namespace Examen2.Data
                             .ToListAsync();
         }
 
-        // Añadir un profesor secundario (Máximo 5 profesores por clase)
         public async Task<(bool Success, string Message)> AddTeacherToCourseAsync(int courseId, string teacherEmailOrUsername)
         {
             await InitAsync();
 
-            // 1. Validar límite de 5 profesores
             int currentTeachersCount = await _db.Table<CourseTeacher>()
                                                 .Where(ct => ct.CourseId == courseId)
                                                 .CountAsync();
@@ -170,7 +160,6 @@ namespace Examen2.Data
                 return (false, "La clase ya alcanzó el límite máximo de 5 profesores.");
             }
 
-            // 2. Buscar al usuario a invitar
             var targetUser = await _db.Table<User>()
                                       .Where(u => u.Email == teacherEmailOrUsername || u.Username == teacherEmailOrUsername)
                                       .FirstOrDefaultAsync();
@@ -180,7 +169,6 @@ namespace Examen2.Data
                 return (false, "El usuario especificado no existe.");
             }
 
-            // 3. Validar si ya es profesor de la clase
             var existingRelation = await _db.Table<CourseTeacher>()
                                              .Where(ct => ct.CourseId == courseId && ct.UserId == targetUser.Id)
                                              .FirstOrDefaultAsync();
@@ -190,7 +178,6 @@ namespace Examen2.Data
                 return (false, "Este usuario ya forma parte de los profesores de la clase.");
             }
 
-            // 4. Registrar co-profesor
             await _db.InsertAsync(new CourseTeacher
             {
                 CourseId = courseId,
@@ -213,7 +200,6 @@ namespace Examen2.Data
             return await _db.Table<Unit>().Where(u => u.CourseId == courseId).OrderBy(u => u.StartDate).ToListAsync();
         }
 
-        // Obtener la lista de profesores de una clase
         public async Task<List<User>> GetCourseTeachersAsync(int courseId)
         {
             await InitAsync();
@@ -233,7 +219,6 @@ namespace Examen2.Data
         {
             await InitAsync();
 
-            // Eliminar registros de la tabla relacional y la clase
             await _db.Table<CourseTeacher>().Where(ct => ct.CourseId == courseId).DeleteAsync();
             int rows = await _db.DeleteAsync<Course>(courseId);
             return rows > 0;
@@ -243,6 +228,15 @@ namespace Examen2.Data
         {
             await InitAsync();
             return await _db.Table<User>().Where(u => u.Id == id).FirstOrDefaultAsync();
+        }
+
+        // MÉTODO REQUERIDO POR LOGINPAGE
+        public async Task<User> GetUserByUsernameOrEmailAsync(string usernameOrEmail)
+        {
+            await InitAsync();
+            return await _db.Table<User>()
+                            .Where(u => u.Username == usernameOrEmail || u.Email == usernameOrEmail)
+                            .FirstOrDefaultAsync();
         }
 
         public async Task<User> ValidateUserAsync(string usernameOrEmail, string password)

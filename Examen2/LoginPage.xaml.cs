@@ -1,7 +1,7 @@
+using System;
 using Examen2.Data;
 using Examen2.Services;
 using Examen2.ViewModels;
-using Microsoft.Maui.Storage;
 
 namespace Examen2;
 
@@ -11,75 +11,57 @@ public partial class LoginPage : ContentPage
     private readonly EmailService _emailService;
     private readonly MainViewModel _mainViewModel;
 
-    public LoginPage(DatabaseService databaseService, MainViewModel mainViewModel)
+    public LoginPage(DatabaseService databaseService, EmailService emailService, MainViewModel mainViewModel)
     {
         InitializeComponent();
         _databaseService = databaseService;
+        _emailService = emailService;
         _mainViewModel = mainViewModel;
-        _emailService = new EmailService();
-    }
-
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing();
-
-        // Comprobación de sesión guardada al cargar la vista
-        int savedUserId = Preferences.Default.Get("LoggedInUserId", -1);
-        if (savedUserId != -1)
-        {
-            var user = await _databaseService.GetUserByIdAsync(savedUserId);
-            if (user != null)
-            {
-                _mainViewModel.SetCurrentUser(user);
-                var mainPage = Handler.MauiContext.Services.GetService<MainPage>();
-
-                if (Application.Current?.Windows.Count > 0 && mainPage != null)
-                {
-                    Application.Current.Windows[0].Page = new NavigationPage(mainPage);
-                }
-            }
-        }
     }
 
     private async void OnLoginClicked(object sender, EventArgs e)
     {
-        string userInput = TxtUser.Text?.Trim();
-        string passwordInput = TxtPassword.Text;
-
-        if (string.IsNullOrEmpty(userInput) || string.IsNullOrEmpty(passwordInput))
+        if (string.IsNullOrWhiteSpace(UsernameEntry.Text) || string.IsNullOrWhiteSpace(PasswordEntry.Text))
         {
-            await DisplayAlert("Error", "Ingresa usuario y contraseña.", "OK");
+            await DisplayAlert("Atención", "Por favor ingresa usuario y contraseña.", "OK");
             return;
         }
 
-        User user = await _databaseService.ValidateUserAsync(userInput, passwordInput);
+        LoginButton.Text = "Enviando código...";
+        LoginButton.IsEnabled = false;
 
-        if (user != null)
+        try
         {
-            string generatedCode = Random.Shared.Next(100000, 999999).ToString();
+            var user = await _databaseService.GetUserByUsernameOrEmailAsync(UsernameEntry.Text.Trim());
 
-            var btn = (Button)sender;
-            btn.IsEnabled = false;
-            btn.Text = "Enviando código...";
-
-            bool emailSent = await _emailService.Send2FACodeAsync(user.Email, generatedCode);
-
-            btn.IsEnabled = true;
-            btn.Text = "Siguiente";
-
-            if (emailSent)
+            if (user == null || user.Password != PasswordEntry.Text)
             {
-                await DisplayAlert("Código enviado", $"Hemos enviado un código de verificación a {user.Email}", "Continuar");
-                await Navigation.PushAsync(new TwoFactorPage(user, generatedCode));
+                await DisplayAlert("Error", "Usuario o contraseña incorrectos.", "OK");
+                return;
+            }
+
+            string verificationCode = new Random().Next(100000, 999999).ToString();
+
+            var (isSent, errorDetail) = await _emailService.Send2FACodeAsync(user.Email, verificationCode);
+
+            if (isSent)
+            {
+                await Navigation.PushAsync(new TwoFactorPage(user, verificationCode, _databaseService, _mainViewModel));
             }
             else
             {
-                await DisplayAlert("Error de envío", "No se pudo enviar el correo de verificación. Revisa la configuración SMTP o tu conexión.", "OK");
+                // Despliega el error real en la pantalla del celular
+                await DisplayAlert("Fallo en SMTP", $"Detalle técnico:\n{errorDetail}", "OK");
             }
         }
-        else
+        catch (Exception ex)
         {
-            await DisplayAlert("Error de autenticación", "Usuario o contraseña incorrectos.", "OK");
+            await DisplayAlert("Error", $"Ocurrió un problema: {ex.Message}", "OK");
+        }
+        finally
+        {
+            LoginButton.Text = "Siguiente";
+            LoginButton.IsEnabled = true;
         }
     }
 

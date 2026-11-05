@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Examen2.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Examen2
 {
@@ -20,6 +21,7 @@ namespace Examen2
 #endif
             builder.Services.AddSingleton<Examen2.Data.DatabaseService>();
             builder.Services.AddSingleton<Examen2.ViewModels.MainViewModel>();
+            builder.Services.AddSingleton<EmailService>();
             builder.Services.AddTransient<MainPage>();
             builder.Services.AddTransient<LoginPage>();
             builder.Services.AddTransient<RegisterPage>();
