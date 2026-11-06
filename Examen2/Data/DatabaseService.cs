@@ -1,4 +1,5 @@
 ﻿using Supabase;
+using Supabase.Postgrest;
 using Examen2.ViewModels;
 
 namespace Examen2.Data
@@ -95,8 +96,8 @@ namespace Examen2.Data
             if (!courseIds.Any()) return new List<Course>();
 
             var coursesResponse = await _client.From<Course>()
-                                               .Filter("id", Postgrest.Constants.Operator.In, courseIds)
-                                               .Get();
+                                   .Filter("id", Constants.Operator.In, courseIds)
+                                   .Get();
 
             return coursesResponse.Models;
         }
@@ -172,9 +173,9 @@ namespace Examen2.Data
         {
             await InitAsync();
             var response = await _client.From<ClassContentItem>()
-                                       .Where(i => i.CourseId == courseId)
-                                       .Order(i => i.CreatedAt, Postgrest.Constants.Ordering.Descending)
-                                       .Get();
+                           .Where(i => i.CourseId == courseId)
+                           .Order(i => i.CreatedAt, Constants.Ordering.Descending)
+                           .Get();
             return response.Models;
         }
 
@@ -196,10 +197,10 @@ namespace Examen2.Data
             if (!courseIds.Any()) return new List<ClassContentItem>();
 
             var response = await _client.From<ClassContentItem>()
-                                       .Filter("course_id", Postgrest.Constants.Operator.In, courseIds)
-                                       .Order(i => i.CreatedAt, Postgrest.Constants.Ordering.Descending)
-                                       .Limit(20)
-                                       .Get();
+                            .Filter("course_id", Constants.Operator.In, courseIds)
+                            .Order(i => i.CreatedAt, Constants.Ordering.Descending)
+                            .Limit(20)
+                            .Get();
 
             return response.Models;
         }
