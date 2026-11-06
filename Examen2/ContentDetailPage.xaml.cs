@@ -9,6 +9,7 @@ public partial class ContentDetailPage : ContentPage
     private readonly DatabaseService _databaseService;
     private readonly MainViewModel _mainViewModel;
     private string _submissionFilePath;
+    private FileResult _pickedFileResult;
 
     public ContentDetailPage(ClassContentItem item, DatabaseService databaseService, MainViewModel mainViewModel)
     {
@@ -48,10 +49,18 @@ public partial class ContentDetailPage : ContentPage
             LblSubmissionStatusTop.IsVisible = false;
         }
 
-        // Seccion del archivo adjunto del profesor (Materiales de referencia)
-        bool hasTeacherFile = !string.IsNullOrEmpty(_item.AttachedFilePath) && File.Exists(_item.AttachedFilePath);
+        // --- CORRECCIÓN: Evaluar si el adjunto del profesor es URL o ruta local existente ---
+        bool isUrl = !string.IsNullOrEmpty(_item.AttachedFilePath) &&
+                     (_item.AttachedFilePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                      _item.AttachedFilePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+
+        bool isLocalFile = !string.IsNullOrEmpty(_item.AttachedFilePath) && File.Exists(_item.AttachedFilePath);
+
+        bool hasTeacherFile = isUrl || isLocalFile;
+
         LayoutTeacherAttachmentSection.IsVisible = hasTeacherFile;
         LayoutTeacherAttachment.IsVisible = hasTeacherFile;
+
         if (hasTeacherFile)
         {
             LblTeacherFileName.Text = Path.GetFileName(_item.AttachedFilePath);
@@ -96,6 +105,7 @@ public partial class ContentDetailPage : ContentPage
             var result = await FilePicker.Default.PickAsync();
             if (result != null)
             {
+                _pickedFileResult = result;
                 _submissionFilePath = result.FullPath;
                 LblSubmittedFileName.Text = result.FileName;
                 LayoutStudentAttachment.IsVisible = true;
@@ -107,29 +117,66 @@ public partial class ContentDetailPage : ContentPage
         }
     }
 
+    // --- MÉTODO DEL PROFESOR ACTUALIZADO PARA ABRIR URLS EN NAVEGADOR ---
     private async void OnOpenTeacherFileClicked(object sender, EventArgs e)
     {
-        if (!string.IsNullOrEmpty(_item.AttachedFilePath) && File.Exists(_item.AttachedFilePath))
+        if (string.IsNullOrEmpty(_item.AttachedFilePath)) return;
+
+        try
         {
-            await Launcher.Default.OpenAsync(new OpenFileRequest
+            if (_item.AttachedFilePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                _item.AttachedFilePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
-                File = new ReadOnlyFile(_item.AttachedFilePath)
-            });
+                await Browser.Default.OpenAsync(new Uri(_item.AttachedFilePath), BrowserLaunchMode.SystemPreferred);
+            }
+            else if (File.Exists(_item.AttachedFilePath))
+            {
+                await Launcher.Default.OpenAsync(new OpenFileRequest
+                {
+                    File = new ReadOnlyFile(_item.AttachedFilePath)
+                });
+            }
+            else
+            {
+                await DisplayAlert("Atención", "El archivo no se encuentra disponible en este dispositivo.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Error", $"No se pudo abrir el archivo: {ex.Message}", "OK");
         }
     }
 
     private async void OnOpenSubmittedFileClicked(object sender, EventArgs e)
     {
-        if (!string.IsNullOrEmpty(_submissionFilePath) && File.Exists(_submissionFilePath))
+        if (string.IsNullOrEmpty(_submissionFilePath))
         {
-            await Launcher.Default.OpenAsync(new OpenFileRequest
-            {
-                File = new ReadOnlyFile(_submissionFilePath)
-            });
+            await DisplayAlert("Atención", "No hay ningún archivo adjunto para visualizar.", "OK");
+            return;
         }
-        else
+
+        try
         {
-            await DisplayAlert("Atención", "El archivo no se encuentra disponible en este dispositivo para visualizar.", "OK");
+            if (_submissionFilePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                _submissionFilePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                await Browser.Default.OpenAsync(new Uri(_submissionFilePath), BrowserLaunchMode.SystemPreferred);
+            }
+            else if (File.Exists(_submissionFilePath))
+            {
+                await Launcher.Default.OpenAsync(new OpenFileRequest
+                {
+                    File = new ReadOnlyFile(_submissionFilePath)
+                });
+            }
+            else
+            {
+                await DisplayAlert("Atención", "El archivo local no se encuentra disponible en este dispositivo.", "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Error", $"No se pudo abrir el archivo: {ex.Message}", "OK");
         }
     }
 
@@ -141,6 +188,7 @@ public partial class ContentDetailPage : ContentPage
             if (!confirm) return;
 
             _submissionFilePath = null;
+            _pickedFileResult = null;
             LayoutStudentAttachment.IsVisible = false;
             LblSubmissionStatus.Text = "Sin entregar";
             LblSubmissionStatusTop.Text = "Asignada";
@@ -150,28 +198,67 @@ public partial class ContentDetailPage : ContentPage
             return;
         }
 
-        if (string.IsNullOrEmpty(_submissionFilePath))
+        if (_pickedFileResult == null && string.IsNullOrEmpty(_submissionFilePath))
         {
             await DisplayAlert("Sin archivo", "Primero debes adjuntar un archivo para entregar la tarea.", "OK");
             return;
         }
 
-        var sub = new TaskSubmission
-        {
-            ContentItemId = _item.Id,
-            UserId = _mainViewModel.CurrentUser.Id,
-            FilePath = _submissionFilePath
-        };
+        BtnSubmit.IsEnabled = false;
+        BtnSubmit.Text = "Subiendo archivo...";
 
-        bool ok = await _databaseService.SaveTaskSubmissionAsync(sub);
-        if (ok)
+        try
         {
-            await DisplayAlert("Éxito", "Tarea entregada correctamente.", "OK");
-            await LoadStudentSubmissionAsync();
+            Stream fileStream = null;
+            string fileName = "archivo_adjunto";
+
+            if (_pickedFileResult != null)
+            {
+                fileStream = await _pickedFileResult.OpenReadAsync();
+                fileName = _pickedFileResult.FileName;
+            }
+            else if (!string.IsNullOrEmpty(_submissionFilePath) && File.Exists(_submissionFilePath))
+            {
+                fileStream = File.OpenRead(_submissionFilePath);
+                fileName = Path.GetFileName(_submissionFilePath);
+            }
+
+            var (publicUrl, errorMessage) = await _databaseService.UploadFileStreamAsync(fileStream, fileName);
+            fileStream?.Dispose();
+
+            if (!string.IsNullOrEmpty(errorMessage) || string.IsNullOrEmpty(publicUrl))
+            {
+                await DisplayAlert("Error de Supabase", $"Detalle técnico: {errorMessage}", "OK");
+                BtnSubmit.IsEnabled = true;
+                BtnSubmit.Text = "Entregar tarea";
+                return;
+            }
+
+            var sub = new TaskSubmission
+            {
+                ContentItemId = _item.Id,
+                UserId = _mainViewModel.CurrentUser.Id,
+                FilePath = publicUrl
+            };
+
+            bool ok = await _databaseService.SaveTaskSubmissionAsync(sub);
+            BtnSubmit.IsEnabled = true;
+
+            if (ok)
+            {
+                await DisplayAlert("Éxito", "Tarea entregada correctamente en la nube.", "OK");
+                await LoadStudentSubmissionAsync();
+            }
+            else
+            {
+                await DisplayAlert("Error", "No se pudo guardar la entrega en la base de datos.", "OK");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            await DisplayAlert("Error", "No se pudo guardar la entrega en la base de datos.", "OK");
+            BtnSubmit.IsEnabled = true;
+            BtnSubmit.Text = "Entregar tarea";
+            await DisplayAlert("Error inesperado", ex.Message, "OK");
         }
     }
 }

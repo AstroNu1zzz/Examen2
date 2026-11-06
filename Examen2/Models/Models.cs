@@ -1,5 +1,6 @@
 ﻿using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
+using System.Text.Json.Serialization;
 
 namespace Examen2.Data
 {
@@ -49,8 +50,11 @@ namespace Examen2.Data
         [Column("course_code")]
         public string CourseCode { get; set; }
 
-        [Column("display_teacher_name")]
-        public string DisplayTeacherName => !string.IsNullOrWhiteSpace(TeacherName) ? TeacherName : (!string.IsNullOrWhiteSpace(PrimaryTeacherName) ? PrimaryTeacherName : "Sin Profesor Assig.");
+        // Atributos para que los serializadores JSON omitan la propiedad al hacer Insert/Update
+        [JsonIgnore]
+        public string DisplayTeacherName => !string.IsNullOrWhiteSpace(TeacherName)
+            ? TeacherName
+            : (!string.IsNullOrWhiteSpace(PrimaryTeacherName) ? PrimaryTeacherName : "Sin Profesor Assig.");
     }
 
     [Table("course_members")]
@@ -108,6 +112,8 @@ namespace Examen2.Data
         [Column("attached_file_path")]
         public string AttachedFilePath { get; set; }
 
+        // Atributos para que el serializador JSON no envíe esta propiedad a Supabase
+        [JsonIgnore]
         public bool IsTask => ItemType == "Tarea";
     }
 

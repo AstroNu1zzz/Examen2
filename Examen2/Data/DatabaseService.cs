@@ -30,6 +30,37 @@ namespace Examen2.Data
             _isInitialized = true;
         }
 
+        public async Task<(string Url, string ErrorMessage)> UploadFileStreamAsync(Stream stream, string originalFileName)
+        {
+            await InitAsync();
+
+            if (stream == null)
+                return (null, "No se pudo abrir el archivo seleccionado.");
+
+            try
+            {
+                // NOTA: 'Workflow-files' con 'f' minúscula, tal como figura en tu panel de Supabase
+                var storage = _client.Storage.From("Workflow-files");
+                string fileName = $"{Guid.NewGuid()}_{originalFileName}";
+
+                using (var memoryStream = new MemoryStream())
+                {
+                    await stream.CopyToAsync(memoryStream);
+                    byte[] fileBytes = memoryStream.ToArray();
+
+                    await storage.Upload(fileBytes, fileName);
+                }
+
+                string publicUrl = storage.GetPublicUrl(fileName);
+                return (publicUrl, null);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error Supabase Storage: {ex.Message}");
+                return (null, ex.Message);
+            }
+        }
+
         // --- AUTENTICACIÓN Y USUARIOS ---
         public async Task<User> ValidateUserAsync(string usernameOrEmail, string password)
         {
