@@ -24,10 +24,21 @@
                         <Editor x:Name="TxtDescription" Placeholder="Escribe aquí los detalles..." HeightRequest="100" TextColor="Black"/>
                     </VerticalStackLayout>
 
-                    <!-- Fecha de Entrega (Solo Tarea) -->
+                    <!-- Fecha y Hora de Entrega (Solo Tarea) -->
                     <VerticalStackLayout x:Name="LayoutDueDate" Spacing="4" IsVisible="False">
-                        <Label Text="Fecha de entrega" FontSize="12" TextColor="#5F6368" />
-                        <DatePicker x:Name="DpDueDate" TextColor="Black"/>
+                        <Label Text="Fecha y hora de entrega" FontSize="12" TextColor="#5F6368" />
+                        <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
+                            <DatePicker Grid.Column="0" 
+                    x:Name="DpDueDate" 
+                    Format="dd/MM/yyyy" 
+                    TextColor="Black" />
+
+                            <TimePicker Grid.Column="1" 
+                    x:Name="TpDueTime" 
+                    Format="HH:mm" 
+                    Time="23:59:00" 
+                    TextColor="Black" />
+                        </Grid>
                     </VerticalStackLayout>
 
                     <!-- Archivo Adjunto (PDF o Imagen) -->

@@ -9,7 +9,6 @@ public partial class ContentDetailPage : ContentPage
     private readonly DatabaseService _databaseService;
     private readonly MainViewModel _mainViewModel;
     private string _submissionFilePath;
-    private string _submittedFilePath;
 
     public ContentDetailPage(ClassContentItem item, DatabaseService databaseService, MainViewModel mainViewModel)
     {
@@ -26,10 +25,13 @@ public partial class ContentDetailPage : ContentPage
         LblTopType.Text = _item.ItemType;
         LblTitle.Text = _item.Title;
         LblDescription.Text = string.IsNullOrEmpty(_item.Description) ? "Sin instrucciones." : _item.Description;
+
+        bool esTarea = _item.ItemType == "Tarea";
+
+        StackPoints.IsVisible = esTarea;
         LblPoints.Text = $"{_item.Points} puntos";
 
-        // Si es Tarea, mostrar panel de entrega y fechas
-        if (_item.ItemType == "Tarea")
+        if (esTarea)
         {
             if (_item.DueDate.HasValue)
             {
@@ -42,15 +44,48 @@ public partial class ContentDetailPage : ContentPage
         }
         else
         {
-            // Si es Material o Anuncio, ocultar panel de entrega
             BorderStudentSubmission.IsVisible = false;
             LblSubmissionStatusTop.IsVisible = false;
         }
 
-        if (!string.IsNullOrEmpty(_item.AttachedFilePath) && File.Exists(_item.AttachedFilePath))
+        // Seccion del archivo adjunto del profesor (Materiales de referencia)
+        bool hasTeacherFile = !string.IsNullOrEmpty(_item.AttachedFilePath) && File.Exists(_item.AttachedFilePath);
+        LayoutTeacherAttachmentSection.IsVisible = hasTeacherFile;
+        LayoutTeacherAttachment.IsVisible = hasTeacherFile;
+        if (hasTeacherFile)
         {
-            LayoutTeacherAttachment.IsVisible = true;
             LblTeacherFileName.Text = Path.GetFileName(_item.AttachedFilePath);
+        }
+    }
+
+    private async Task LoadStudentSubmissionAsync()
+    {
+        if (_mainViewModel?.CurrentUser == null) return;
+
+        var sub = await _databaseService.GetTaskSubmissionAsync(_item.Id, _mainViewModel.CurrentUser.Id);
+        if (sub != null && !string.IsNullOrEmpty(sub.FilePath))
+        {
+            _submissionFilePath = sub.FilePath;
+            LblSubmittedFileName.Text = Path.GetFileName(sub.FilePath);
+            LayoutStudentAttachment.IsVisible = true;
+
+            LblSubmissionStatus.Text = "Entregado";
+            LblSubmissionStatus.TextColor = Color.FromArgb("#5EEAD4");
+            LblSubmissionStatusTop.Text = "Entregado";
+            BtnSubmit.Text = "Anular entrega";
+            BtnSubmit.BackgroundColor = Color.FromArgb("#D93025");
+            BtnSubmit.TextColor = Colors.White;
+        }
+        else
+        {
+            _submissionFilePath = null;
+            LayoutStudentAttachment.IsVisible = false;
+            LblSubmissionStatus.Text = "Sin entregar";
+            LblSubmissionStatus.TextColor = Color.FromArgb("#5EEAD4");
+            LblSubmissionStatusTop.Text = "Asignada";
+            BtnSubmit.Text = "Entregar tarea";
+            BtnSubmit.BackgroundColor = Color.FromArgb("#5EEAD4");
+            BtnSubmit.TextColor = Color.FromArgb("#0F172A");
         }
     }
 
@@ -61,49 +96,14 @@ public partial class ContentDetailPage : ContentPage
             var result = await FilePicker.Default.PickAsync();
             if (result != null)
             {
-                _submittedFilePath = result.FullPath;
+                _submissionFilePath = result.FullPath;
                 LblSubmittedFileName.Text = result.FileName;
-
-                // Mostrar la tarjeta contenedora del archivo
                 LayoutStudentAttachment.IsVisible = true;
             }
         }
         catch (Exception ex)
         {
             await DisplayAlert("Error", $"No se pudo seleccionar el archivo: {ex.Message}", "OK");
-        }
-    }
-
-    private async void OnOpenSubmittedFileClicked(object sender, EventArgs e)
-    {
-        if (!string.IsNullOrEmpty(_submittedFilePath) && System.IO.File.Exists(_submittedFilePath))
-        {
-            await Launcher.Default.OpenAsync(new OpenFileRequest
-            {
-                File = new ReadOnlyFile(_submittedFilePath)
-            });
-        }
-        else
-        {
-            await DisplayAlert("Atención", "El archivo no se encuentra disponible en este dispositivo para visualizar.", "OK");
-        }
-    }
-
-    private async Task LoadStudentSubmissionAsync()
-    {
-        if (_mainViewModel.CurrentUser == null) return;
-
-        var sub = await _databaseService.GetTaskSubmissionAsync(_item.Id, _mainViewModel.CurrentUser.Id);
-        if (sub != null && !string.IsNullOrEmpty(sub.FilePath))
-        {
-            _submissionFilePath = sub.FilePath;
-            LblSubmittedFileName.Text = $"📄 {Path.GetFileName(sub.FilePath)}";
-            LblSubmittedFileName.IsVisible = true;
-
-            LblSubmissionStatus.Text = "Entregado";
-            LblSubmissionStatus.TextColor = Color.FromArgb("#1E8E3E");
-            BtnSubmit.Text = "Anular entrega";
-            BtnSubmit.BackgroundColor = Color.FromArgb("#D93025");
         }
     }
 
@@ -118,22 +118,41 @@ public partial class ContentDetailPage : ContentPage
         }
     }
 
+    private async void OnOpenSubmittedFileClicked(object sender, EventArgs e)
+    {
+        if (!string.IsNullOrEmpty(_submissionFilePath) && File.Exists(_submissionFilePath))
+        {
+            await Launcher.Default.OpenAsync(new OpenFileRequest
+            {
+                File = new ReadOnlyFile(_submissionFilePath)
+            });
+        }
+        else
+        {
+            await DisplayAlert("Atención", "El archivo no se encuentra disponible en este dispositivo para visualizar.", "OK");
+        }
+    }
+
     private async void OnSubmitTaskClicked(object sender, EventArgs e)
     {
-        if (string.IsNullOrEmpty(_submissionFilePath))
+        if (BtnSubmit.Text == "Anular entrega")
         {
-            await DisplayAlert("Sin archivo", "Primero debes adjuntar un archivo para entregar la tarea.", "OK");
+            bool confirm = await DisplayAlert("Anular entrega", "¿Quieres anular la entrega de esta tarea?", "Sí, anular", "Cancelar");
+            if (!confirm) return;
+
+            _submissionFilePath = null;
+            LayoutStudentAttachment.IsVisible = false;
+            LblSubmissionStatus.Text = "Sin entregar";
+            LblSubmissionStatusTop.Text = "Asignada";
+            BtnSubmit.Text = "Entregar tarea";
+            BtnSubmit.BackgroundColor = Color.FromArgb("#5EEAD4");
+            BtnSubmit.TextColor = Color.FromArgb("#0F172A");
             return;
         }
 
-        if (BtnSubmit.Text == "Anular entrega")
+        if (string.IsNullOrEmpty(_submissionFilePath))
         {
-            _submissionFilePath = null;
-            LblSubmittedFileName.IsVisible = false;
-            LblSubmissionStatus.Text = "Sin entregar";
-            LblSubmissionStatus.TextColor = Color.FromArgb("#D93025");
-            BtnSubmit.Text = "Entregar";
-            BtnSubmit.BackgroundColor = Color.FromArgb("#1A73E8");
+            await DisplayAlert("Sin archivo", "Primero debes adjuntar un archivo para entregar la tarea.", "OK");
             return;
         }
 
@@ -149,6 +168,10 @@ public partial class ContentDetailPage : ContentPage
         {
             await DisplayAlert("Éxito", "Tarea entregada correctamente.", "OK");
             await LoadStudentSubmissionAsync();
+        }
+        else
+        {
+            await DisplayAlert("Error", "No se pudo guardar la entrega en la base de datos.", "OK");
         }
     }
 }

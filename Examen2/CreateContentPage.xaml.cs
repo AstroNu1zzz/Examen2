@@ -64,13 +64,26 @@ public partial class CreateContentPage : ContentPage
             return;
         }
 
+        // Combinar la fecha (00:00:00) con la hora seleccionada
+        DateTime? dueDate = null;
+        if (_itemType == "Tarea")
+        {
+            // Obtenemos la fecha seleccionada (o la fecha de hoy si viene nula)
+            DateTime fechaBase = DpDueDate.Date ?? DateTime.Today;
+
+            // Extraemos la hora o asignamos 23:59 por defecto si es nula
+            TimeSpan horaSeleccionada = TpDueTime.Time ?? new TimeSpan(23, 59, 0);
+
+            dueDate = fechaBase.Date.Add(horaSeleccionada);
+        }
+
         var newItem = new ClassContentItem
         {
             CourseId = _courseId,
             ItemType = _itemType,
             Title = title,
             Description = description,
-            DueDate = (_itemType == "Tarea") ? DpDueDate.Date : null,
+            DueDate = dueDate, // <-- AHORA GUARDA FECHA Y HORA EXACTAS
             AuthorName = _mainViewModel.CurrentUser?.Username ?? "Profesor",
             AttachedFilePath = _selectedFilePath
         };
@@ -79,7 +92,6 @@ public partial class CreateContentPage : ContentPage
 
         if (success)
         {
-            // Refrescar el ViewModel global para que el tablón reciba los datos nuevos inmediatamente
             await _mainViewModel.RefreshCoursesAsync();
             await Navigation.PopAsync();
         }

@@ -160,10 +160,11 @@ public partial class CourseDetailPage : ContentPage
         EnsureServices();
         var border = sender as Border;
         var vm = border?.BindingContext as FeedPostViewModel;
-        if (vm != null)
-        {
-            await Navigation.PushAsync(new ContentDetailPage(vm.SourceItem, _databaseService, _mainViewModel));
-        }
+
+        // Si es un Anuncio, se ignora el toque y no navega al detalle
+        if (vm == null || vm.SourceItem.ItemType == "Anuncio") return;
+
+        await Navigation.PushAsync(new ContentDetailPage(vm.SourceItem, _databaseService, _mainViewModel));
     }
 
     private void OnPostOptionsClicked(object sender, EventArgs e)
@@ -178,6 +179,11 @@ public class FeedPostViewModel
     public ClassContentItem SourceItem { get; }
 
     public string Title => $"{SourceItem.ItemType}: {SourceItem.Title}";
+    public string Description => SourceItem.Description;
+
+    // Se evalúa verdadero ÚNICAMENTE si es un Anuncio y tiene contenido
+    public bool HasDescription => SourceItem.ItemType == "Anuncio" && !string.IsNullOrWhiteSpace(SourceItem.Description);
+
     public string DateFormatted => SourceItem.CreatedAt.ToString("dd 'de' MMM.");
     public bool IsAssignment => SourceItem.ItemType == "Tarea";
     public string DueDateText => SourceItem.DueDate.HasValue ? $"Fecha de entrega: {SourceItem.DueDate.Value:dd/MM HH:mm}" : "";

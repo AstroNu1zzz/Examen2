@@ -94,8 +94,7 @@
                                                FontAttributes="Bold" 
                                                TextColor="White" />
                                         <HorizontalStackLayout Spacing="4">
-                                            <Label Text="Prof. " FontSize="13" FontAttributes="Bold" TextColor="#5EEAD4" />
-                                            <Label Text="{Binding Course.TeacherName}" FontSize="13" FontAttributes="Bold" TextColor="#5EEAD4" />
+                                            <Label Text="{Binding Course.DisplayTeacherName, StringFormat='Prof. {0}'}" FontSize="13" FontAttributes="Bold" TextColor="#5EEAD4" />
                                         </HorizontalStackLayout>
                                     </VerticalStackLayout>
                                 </Grid>
@@ -137,72 +136,87 @@
                         <BindableLayout.ItemTemplate>
                             <DataTemplate>
                                 <Border StrokeThickness="1"
-                                        Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
-                                        StrokeShape="RoundRectangle 14"
-                                        Padding="16"
-                                        Background="{Binding CardGradientBrush}"
-                                        Shadow="{StaticResource FeedShadow}">
+                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
+                    StrokeShape="RoundRectangle 14"
+                    Padding="16"
+                    Background="{Binding CardGradientBrush}"
+                    Shadow="{StaticResource FeedShadow}">
 
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer Tapped="OnFeedPostTapped" />
                                     </Border.GestureRecognizers>
 
-                                    <Grid RowDefinitions="Auto, Auto, Auto" RowSpacing="10">
+                                    <!-- CAMBIO: RowDefinitions pasa a "Auto, Auto, Auto, Auto" -->
+                                    <Grid RowDefinitions="Auto, Auto, Auto, Auto" RowSpacing="8">
+
+                                        <!-- FILA 0: ENCABEZADO (ÍCONO, TÍTULO Y FECHA) -->
                                         <Grid Grid.Row="0" ColumnDefinitions="Auto, *, Auto" ColumnSpacing="14" VerticalOptions="Center">
                                             <Border Grid.Column="0"
-                                                    WidthRequest="42"
-                                                    HeightRequest="42"
-                                                    StrokeShape="RoundRectangle 21"
-                                                    StrokeThickness="0"
-                                                    BackgroundColor="{Binding IconBgColor}">
+                                WidthRequest="42"
+                                HeightRequest="42"
+                                StrokeShape="RoundRectangle 21"
+                                StrokeThickness="0"
+                                BackgroundColor="{Binding IconBgColor}">
                                                 <Label Text="{Binding IconSymbol}"
-                                                       FontSize="18"
-                                                       TextColor="White"
-                                                       HorizontalOptions="Center"
-                                                       VerticalOptions="Center" />
+                                   FontSize="18"
+                                   TextColor="White"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
                                             </Border>
 
                                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                                 <Label Text="{Binding Title}"
-                                                       FontSize="14"
-                                                       FontAttributes="Bold"
-                                                       TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                                   FontSize="14"
+                                   FontAttributes="Bold"
+                                   TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
                                                 <Label Text="{Binding DateFormatted}"
-                                                       FontSize="12"
-                                                       TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+                                   FontSize="12"
+                                   TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
                                             </VerticalStackLayout>
 
                                             <ImageButton Grid.Column="2"
-                                                         Source="icon_more_vert.png"
-                                                         WidthRequest="20"
-                                                         HeightRequest="20"
-                                                         BackgroundColor="Transparent"
-                                                         Clicked="OnPostOptionsClicked" />
+                                     Source="icon_more_vert.png"
+                                     WidthRequest="20"
+                                     HeightRequest="20"
+                                     BackgroundColor="Transparent"
+                                     Clicked="OnPostOptionsClicked" />
                                         </Grid>
 
-                                        <HorizontalStackLayout Grid.Row="1" IsVisible="{Binding IsAssignment}">
+                                        <!-- FILA 1: TEXTO / CONTENIDO DEL ANUNCIO -->
+                                        <Label Grid.Row="1"
+                           Text="{Binding Description}"
+                           IsVisible="{Binding HasDescription}"
+                           FontSize="13"
+                           TextColor="{AppThemeBinding Light=#334155, Dark=#CBD5E1}"
+                           LineBreakMode="WordWrap"
+                           Margin="0,2,0,4" />
+
+                                        <!-- FILA 2: FECHA DE ENTREGA (SOLO TAREAS) -->
+                                        <HorizontalStackLayout Grid.Row="2" IsVisible="{Binding IsAssignment}">
                                             <Border Padding="8,4"
-                                                    StrokeThickness="0"
-                                                    StrokeShape="RoundRectangle 6"
-                                                    BackgroundColor="#FEE2E2">
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 6"
+                                BackgroundColor="#FEE2E2">
                                                 <Label Text="{Binding DueDateText}"
-                                                       FontSize="11"
-                                                       FontAttributes="Bold"
-                                                       TextColor="#D93025" />
+                                   FontSize="11"
+                                   FontAttributes="Bold"
+                                   TextColor="#D93025" />
                                             </Border>
                                         </HorizontalStackLayout>
 
-                                        <Grid Grid.Row="2" ColumnDefinitions="*, Auto" Margin="0,4,0,0">
+                                        <!-- FILA 3: SEPARADOR Y COMENTARIOS -->
+                                        <Grid Grid.Row="3" ColumnDefinitions="*, Auto" Margin="0,4,0,0">
                                             <BoxView HeightRequest="1" 
-                                                     Color="{AppThemeBinding Light=#F1F5F9, Dark=#272E38}" 
-                                                     VerticalOptions="Center" />
+                                 Color="{AppThemeBinding Light=#F1F5F9, Dark=#272E38}" 
+                                 VerticalOptions="Center" />
 
                                             <Label Grid.Column="1"
-                                                   Text="{Binding CommentsCountText}"
-                                                   FontSize="12"
-                                                   Margin="10,0,0,0"
-                                                   TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+                               Text="{Binding CommentsCountText}"
+                               FontSize="12"
+                               Margin="10,0,0,0"
+                               TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
                                         </Grid>
+
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -252,7 +266,7 @@
                         <Grid ColumnDefinitions="Auto, *" ColumnSpacing="12">
                             <Label Grid.Column="0" Text="👨‍🏫" FontSize="24" VerticalOptions="Center" />
                             <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
-                                <Label Text="{Binding Course.TeacherName}" FontAttributes="Bold" FontSize="14" TextColor="#0F172A" />
+                                <Label Text="{Binding Course.DisplayTeacherName, StringFormat='Prof. {0}'}" FontAttributes="Bold" FontSize="14" TextColor="Black" />
                                 <Label Text="Profesor Titular" FontSize="12" TextColor="#64748B" />
                             </VerticalStackLayout>
                         </Grid>

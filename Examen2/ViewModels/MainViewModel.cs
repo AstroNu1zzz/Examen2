@@ -286,21 +286,24 @@ namespace Examen2.ViewModels
                 return;
             }
 
-            // Cargar clases
             var courses = await _databaseService.GetCoursesAsync(CurrentUser.Id);
             EnrolledCourses.Clear();
             foreach (var course in courses)
             {
+                // Si TeacherName viene nulo de la BD pero PrimaryTeacherName tiene valor, normalizarlo
+                if (string.IsNullOrWhiteSpace(course.TeacherName) && !string.IsNullOrWhiteSpace(course.PrimaryTeacherName))
+                {
+                    course.TeacherName = course.PrimaryTeacherName;
+                }
+
                 EnrolledCourses.Add(course);
             }
 
-            // Cargar novedades globales para el Tablón de Novedades
             var activities = await _databaseService.GetGlobalActivitiesAsync(CurrentUser.Id);
             GlobalRecentActivities.Clear();
 
             foreach (var a in activities)
             {
-                // Asignación de gradientes e íconos estilo WorkFlow
                 string gradient = a.ItemType == "Tarea" ? "#FADBD8" : (a.ItemType == "Material" ? "#D6EAF8" : "#D1F2EB");
                 string icon = a.ItemType == "Tarea" ? "📋" : (a.ItemType == "Material" ? "📖" : "📢");
 
@@ -309,7 +312,7 @@ namespace Examen2.ViewModels
 
                 GlobalRecentActivities.Add(new ActivityItemViewModel
                 {
-                    OriginalItem = a, // <--- Guardamos la referencia
+                    OriginalItem = a,
                     DisplayTitle = $"{a.ItemType}: {a.Title}",
                     Subtitle = $"{courseName} • Publicado el {a.CreatedAt:dd MMM}",
                     GradientStartColor = gradient,
@@ -399,9 +402,21 @@ namespace Examen2.ViewModels
         public string ThemeColor { get; set; }
         public int PrimaryTeacherId { get; set; }
         public string PrimaryTeacherName { get; set; }
-
-        // Nueva propiedad para la imagen de fondo de la clase
         public string BannerImagePath { get; set; } = "default_course_bg.jpg";
+
+        // Propiedad calculada para garantizar que XAML siempre reciba un valor válido
+        [Ignore]
+        public string DisplayTeacherName
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(TeacherName))
+                    return TeacherName;
+                if (!string.IsNullOrWhiteSpace(PrimaryTeacherName))
+                    return PrimaryTeacherName;
+                return "Sin Profesor Assig.";
+            }
+        }
     }
 
     public class CourseTeacher
@@ -431,15 +446,19 @@ namespace Examen2.ViewModels
         [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
         public int CourseId { get; set; }
-        public int? UnitId { get; set; } // <--- Relación con la Unidad
-        public string ItemType { get; set; }
+        public int? UnitId { get; set; }
+        public string ItemType { get; set; } // "Tarea", "Material", "Anuncio"
         public string Title { get; set; }
         public string Description { get; set; }
-        public int Points { get; set; } = 100; // <--- Puntuación por defecto
+        public int Points { get; set; } = 100;
         public DateTime? DueDate { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public string AuthorName { get; set; }
         public string AttachedFilePath { get; set; }
+
+        // Retorna true solo si la publicación es una tarea evaluable
+        [Ignore]
+        public bool IsTask => ItemType == "Tarea";
     }
 
     public class TaskSubmission
