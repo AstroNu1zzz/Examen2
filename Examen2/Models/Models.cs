@@ -144,4 +144,23 @@ namespace Examen2.Data
         [Column("feedback")]
         public string Feedback { get; set; }
     }
+
+    [Table("course_units")]
+    public class CourseUnit : BaseModel
+    {
+        [PrimaryKey("id", false)]
+        public int Id { get; set; }
+
+        [Column("course_id")]
+        public int CourseId { get; set; }
+
+        [Column("title")]
+        public string Title { get; set; }
+
+        [Column("start_date")]
+        public DateTime StartDate { get; set; }
+
+        [Column("end_date")]
+        public DateTime EndDate { get; set; }
+    }
 }

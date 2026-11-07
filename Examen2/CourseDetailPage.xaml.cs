@@ -4,6 +4,85 @@ using Examen2.ViewModels;
 
 namespace Examen2;
 
+// 1. MODELO DE GRUPO PARA COLLECTIONVIEW AGRUPADO EN PESTAÑA TRABAJOS
+public class UnitGroupViewModel : List<FeedPostViewModel>
+{
+    public string UnitTitle { get; set; }
+    public string DateRangeText { get; set; }
+
+    public UnitGroupViewModel(string unitTitle, string dateRangeText, List<FeedPostViewModel> items) : base(items)
+    {
+        UnitTitle = unitTitle;
+        DateRangeText = dateRangeText;
+    }
+}
+
+// 2. MODELO DE VISTA PARA FEED DE PUBLICACIONES Y TARJETAS
+public class FeedPostViewModel
+{
+    public ClassContentItem SourceItem { get; }
+
+    public string Title => $"{SourceItem.ItemType}: {SourceItem.Title}";
+    public string Description => SourceItem.Description;
+
+    public bool HasDescription => SourceItem.ItemType == "Anuncio" && !string.IsNullOrWhiteSpace(SourceItem.Description);
+
+    public string DateFormatted => SourceItem.CreatedAt.ToString("dd 'de' MMM.");
+    public bool IsAssignment => SourceItem.ItemType == "Tarea";
+    public string DueDateText => SourceItem.DueDate.HasValue ? $"Fecha de entrega: {SourceItem.DueDate.Value:dd/MM HH:mm}" : "";
+    public string CommentsCountText => "Agregar un comentario de clase";
+
+    public string IconSymbol => SourceItem.ItemType switch
+    {
+        "Tarea" => "📋",
+        "Material" => "📖",
+        _ => "📢"
+    };
+
+    public Color IconBgColor => SourceItem.ItemType switch
+    {
+        "Tarea" => Color.FromArgb("#D93025"),
+        "Material" => Color.FromArgb("#1A73E8"),
+        _ => Color.FromArgb("#1E8E3E")
+    };
+
+    public Brush CardGradientBrush
+    {
+        get
+        {
+            var brush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(0, 1)
+            };
+
+            if (SourceItem.ItemType == "Tarea") // ROJO
+            {
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#FADBD8"), 0.0f));
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#FFFFFF"), 0.8f));
+            }
+            else if (SourceItem.ItemType == "Material") // AZUL
+            {
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#D6EAF8"), 0.0f));
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#FFFFFF"), 0.8f));
+            }
+            else // ANUNCIO - VERDE
+            {
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#D1F2EB"), 0.0f));
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#FFFFFF"), 0.8f));
+            }
+
+            return brush;
+        }
+    }
+
+    public FeedPostViewModel(ClassContentItem item)
+    {
+        SourceItem = item;
+    }
+}
+
+// 3. PÁGINA PRINCIPAL DE DETALLE DEL CURSO
 public partial class CourseDetailPage : ContentPage
 {
     public Course Course { get; set; }
@@ -56,23 +135,14 @@ public partial class CourseDetailPage : ContentPage
             _isTeacher = false;
         }
 
-        // 2. Ajustar visibilidad de elementos según el rol (Profesor vs Alumno)
-        if (FindByName("FabAdd") is VisualElement fabAdd)
-        {
-            fabAdd.IsVisible = _isTeacher;
-        }
+        // 2. Ajustar visibilidad de botones y herramientas según el rol
+        if (FindByName("FabAdd") is VisualElement fabAdd) fabAdd.IsVisible = _isTeacher;
+        if (FindByName("BtnAddTeacher") is VisualElement btnAddTeacher) btnAddTeacher.IsVisible = _isTeacher;
+        if (FindByName("BorderCreatePost") is VisualElement borderCreatePost) borderCreatePost.IsVisible = _isTeacher;
+        if (FindByName("BtnManageUnits") is VisualElement btnManageUnits) btnManageUnits.IsVisible = _isTeacher;
 
-        if (FindByName("BtnAddTeacher") is VisualElement btnAddTeacher)
-        {
-            btnAddTeacher.IsVisible = _isTeacher;
-        }
-
-        if (FindByName("BorderCreatePost") is VisualElement borderCreatePost)
-        {
-            borderCreatePost.IsVisible = _isTeacher;
-        }
-
-        // 3. Cargar publicaciones y tareas del Tablón
+        // 3. Cargar unidades y publicaciones de Supabase
+        var units = await _databaseService.GetCourseUnitsAsync(Course.Id);
         var items = await _databaseService.GetCourseContentItemsAsync(Course.Id);
 
         FeedPosts.Clear();
@@ -89,7 +159,40 @@ public partial class CourseDetailPage : ContentPage
             }
         }
 
-        // 4. Cargar la lista de profesores y alumnos para la pestaña "Personas"
+        // 4. Agrupar la lista de actividades por Unidades/Parciales para la pestaña Trabajos
+        var groupedAssignments = new List<UnitGroupViewModel>();
+
+        foreach (var unit in units)
+        {
+            var unitItems = items.Where(i => i.UnitId == unit.Id || (i.CreatedAt.Date >= unit.StartDate.Date && i.CreatedAt.Date <= unit.EndDate.Date))
+                                 .Select(i => new FeedPostViewModel(i))
+                                 .ToList();
+
+            if (unitItems.Any())
+            {
+                groupedAssignments.Add(new UnitGroupViewModel(
+                    unit.Title,
+                    $"{unit.StartDate:dd/MM} - {unit.EndDate:dd/MM}",
+                    unitItems));
+            }
+        }
+
+        // Elementos sin unidad asignada o publicados fuera del rango de fechas
+        var unassignedItems = items.Where(i => !i.UnitId.HasValue && !units.Any(u => i.CreatedAt.Date >= u.StartDate.Date && i.CreatedAt.Date <= u.EndDate.Date))
+                                   .Select(i => new FeedPostViewModel(i))
+                                   .ToList();
+
+        if (unassignedItems.Any())
+        {
+            groupedAssignments.Add(new UnitGroupViewModel("General / Sin Unidad", "", unassignedItems));
+        }
+
+        if (FindByName("CvAssignmentsGrouped") is CollectionView cvGrouped)
+        {
+            cvGrouped.ItemsSource = groupedAssignments;
+        }
+
+        // 5. Cargar profesores y alumnos para la pestaña "Personas"
         var teachers = await _databaseService.GetCourseTeachersAsync(Course.Id);
         if (FindByName("CvTeachers") is CollectionView cvTeachers)
         {
@@ -139,10 +242,23 @@ public partial class CourseDetailPage : ContentPage
         activeIndicator.Color = activeColor;
     }
 
-    // ACCIONES DE BOTONES
+    // ACCIONES Y BOTONES
     private async void OnBackButtonClicked(object sender, EventArgs e)
     {
         await Navigation.PopAsync();
+    }
+
+    private async void OnManageUnitsClicked(object sender, EventArgs e)
+    {
+        EnsureServices();
+
+        if (!_isTeacher)
+        {
+            await DisplayAlert("Acceso Restringido", "Solo los profesores pueden gestionar las unidades del curso.", "OK");
+            return;
+        }
+
+        await Navigation.PushAsync(new ManageUnitsPage(Course.Id, _databaseService));
     }
 
     private async void OnAddTeacherClicked(object sender, EventArgs e)
@@ -170,7 +286,6 @@ public partial class CourseDetailPage : ContentPage
 
         if (success)
         {
-            // Actualizar la lista en pantalla
             var teachers = await _databaseService.GetCourseTeachersAsync(Course.Id);
             if (FindByName("CvTeachers") is CollectionView cvTeachers)
             {
@@ -245,86 +360,58 @@ public partial class CourseDetailPage : ContentPage
 
         if (vm == null || vm.SourceItem.ItemType == "Anuncio") return;
 
-        // Si es Profesor y es una Tarea -> Abrir panel del profesor
         if (_isTeacher && vm.SourceItem.ItemType == "Tarea")
         {
             await Navigation.PushAsync(new TeacherTaskOverviewPage(vm.SourceItem, Course.Id, _databaseService, _mainViewModel));
         }
         else
         {
-            // Si es Alumno o es un Material -> Abrir vista estándar de entrega/lectura
             await Navigation.PushAsync(new ContentDetailPage(vm.SourceItem, _databaseService, _mainViewModel));
         }
     }
 
-    private void OnPostOptionsClicked(object sender, EventArgs e)
+    private async void OnPostOptionsClicked(object sender, EventArgs e)
     {
-        // Opciones secundarias del post
-    }
-}
+        EnsureServices();
 
-// MODELO DE VISTA PARA FEED DE PUBLICACIONES (CON GRADIENTES DINÁMICOS)
-public class FeedPostViewModel
-{
-    public ClassContentItem SourceItem { get; }
+        var button = sender as ImageButton;
+        var vm = button?.BindingContext as FeedPostViewModel;
 
-    public string Title => $"{SourceItem.ItemType}: {SourceItem.Title}";
-    public string Description => SourceItem.Description;
+        if (vm == null) return;
 
-    // Se evalúa verdadero ÚNICAMENTE si es un Anuncio y tiene contenido
-    public bool HasDescription => SourceItem.ItemType == "Anuncio" && !string.IsNullOrWhiteSpace(SourceItem.Description);
-
-    public string DateFormatted => SourceItem.CreatedAt.ToString("dd 'de' MMM.");
-    public bool IsAssignment => SourceItem.ItemType == "Tarea";
-    public string DueDateText => SourceItem.DueDate.HasValue ? $"Fecha de entrega: {SourceItem.DueDate.Value:dd/MM HH:mm}" : "";
-    public string CommentsCountText => "Agregar un comentario de clase";
-
-    public string IconSymbol => SourceItem.ItemType switch
-    {
-        "Tarea" => "📋",
-        "Material" => "📖",
-        _ => "📢"
-    };
-
-    public Color IconBgColor => SourceItem.ItemType switch
-    {
-        "Tarea" => Color.FromArgb("#D93025"),
-        "Material" => Color.FromArgb("#1A73E8"),
-        _ => Color.FromArgb("#1E8E3E")
-    };
-
-    public Brush CardGradientBrush
-    {
-        get
+        // Si es alumno, no tiene opciones de gestión sobre la publicación
+        if (!_isTeacher)
         {
-            var brush = new LinearGradientBrush
-            {
-                StartPoint = new Point(0, 0),
-                EndPoint = new Point(0, 1)
-            };
-
-            if (SourceItem.ItemType == "Tarea") // ROJO
-            {
-                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#FADBD8"), 0.0f));
-                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#FFFFFF"), 0.8f));
-            }
-            else if (SourceItem.ItemType == "Material") // AZUL
-            {
-                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#D6EAF8"), 0.0f));
-                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#FFFFFF"), 0.8f));
-            }
-            else // ANUNCIO / AVISO - VERDE
-            {
-                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#D1F2EB"), 0.0f));
-                brush.GradientStops.Add(new GradientStop(Color.FromArgb("#FFFFFF"), 0.8f));
-            }
-
-            return brush;
+            await DisplayAlert("Opciones", $"Publicado el {vm.DateFormatted}", "OK");
+            return;
         }
-    }
 
-    public FeedPostViewModel(ClassContentItem item)
-    {
-        SourceItem = item;
+        // Opciones exclusivas para el profesor
+        string action = await DisplayActionSheet(
+            $"Opciones de: {vm.SourceItem.Title}",
+            "Cancelar",
+            "Eliminar publicación",
+            "Copiar enlace");
+
+        if (action == "Eliminar publicación")
+        {
+            bool confirm = await DisplayAlert(
+                "Confirmar eliminación",
+                $"¿Estás seguro de eliminar '{vm.SourceItem.Title}'? Esta acción no se puede deshacer.",
+                "Sí, eliminar",
+                "Cancelar");
+
+            if (confirm)
+            {
+                // Eliminar de Supabase y recargar el feed
+                await _databaseService.DeleteClassContentItemAsync(vm.SourceItem.Id);
+                await LoadCourseContentAsync();
+            }
+        }
+        else if (action == "Copiar enlace")
+        {
+            await Clipboard.Default.SetTextAsync($"workflow://course/{Course.Id}/item/{vm.SourceItem.Id}");
+            await DisplayAlert("Éxito", "Enlace copiado al portapapeles.", "OK");
+        }
     }
 }

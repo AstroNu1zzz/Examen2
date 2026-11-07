@@ -371,6 +371,67 @@ namespace Examen2.Data
             return response.Models;
         }
 
+        // --- OBTENER UNIDADES DE UN CURSO ---
+        public async Task<List<CourseUnit>> GetCourseUnitsAsync(int courseId)
+        {
+            await InitAsync();
+            var response = await _client.From<CourseUnit>()
+                                       .Where(u => u.CourseId == courseId)
+                                       .Order(u => u.StartDate, Constants.Ordering.Ascending)
+                                       .Get();
+            return response.Models;
+        }
+
+        // --- CREAR UNIDAD ---
+        public async Task<bool> AddCourseUnitAsync(CourseUnit unit)
+        {
+            await InitAsync();
+            var response = await _client.From<CourseUnit>().Insert(unit);
+            return response.Models.Count > 0;
+        }
+
+        // --- OBTENER UNIDAD ACTIVA SEGÚN LA FECHA DE PUBLICACIÓN ---
+        public async Task<CourseUnit> GetActiveUnitForCourseAsync(int courseId, DateTime date)
+        {
+            await InitAsync();
+            var units = await GetCourseUnitsAsync(courseId);
+            return units.FirstOrDefault(u => date.Date >= u.StartDate.Date && date.Date <= u.EndDate.Date);
+        }
+
+        // --- ACTUALIZAR INSERTAR CONTENIDO (ASIGNACIÓN AUTOMÁTICA DE UNIDAD) ---
+        public async Task<bool> AddClassContentItemWithAutoUnitAsync(ClassContentItem item)
+        {
+            await InitAsync();
+
+            // Si no tiene unidad asignada explícitamente, busca la unidad según la fecha actual
+            if (!item.UnitId.HasValue)
+            {
+                var activeUnit = await GetActiveUnitForCourseAsync(item.CourseId, DateTime.Now);
+                if (activeUnit != null)
+                {
+                    item.UnitId = activeUnit.Id;
+                }
+            }
+
+            var response = await _client.From<ClassContentItem>().Insert(item);
+            return response.Models.Count > 0;
+        }
+
+        public async Task<bool> DeleteClassContentItemAsync(int itemId)
+        {
+            await InitAsync();
+            try
+            {
+                await _client.From<ClassContentItem>().Where(i => i.Id == itemId).Delete();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al eliminar publicación: {ex.Message}");
+                return false;
+            }
+        }
+
         // --- ENTREGAS DE TAREAS ---
         public async Task<TaskSubmission> GetTaskSubmissionAsync(int contentItemId, int userId)
         {
