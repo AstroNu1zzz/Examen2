@@ -35,15 +35,18 @@ public partial class ManageUnitsPage : ContentPage
             return;
         }
 
-        // Conversión segura de DateTime? a DateTime
-        DateTime startDate = DpStart.Date ?? DateTime.Now;
-        DateTime endDate = DpEnd.Date ?? DateTime.Now.AddDays(30);
+        DateTime rawStart = DpStart.Date ?? DateTime.Now;
+        DateTime rawEnd = DpEnd.Date ?? DateTime.Now.AddDays(30);
 
-        if (endDate < startDate)
+        if (rawEnd < rawStart)
         {
             await DisplayAlert("Error", "La fecha fin debe ser posterior a la fecha de inicio.", "OK");
             return;
         }
+
+        // CORRECCIÓN DE ZONA HORARIA: Fijar a las 12:00:00 evita que el desfase UTC reste un día
+        DateTime startDate = rawStart.Date.AddHours(12);
+        DateTime endDate = rawEnd.Date.AddHours(12);
 
         var newUnit = new CourseUnit
         {
@@ -65,4 +68,4 @@ public partial class ManageUnitsPage : ContentPage
             await DisplayAlert("Error", "No se pudo guardar la unidad.", "OK");
         }
     }
-}
+}   
