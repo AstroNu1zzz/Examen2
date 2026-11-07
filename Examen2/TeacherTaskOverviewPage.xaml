@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Examen2.TeacherTaskOverviewPage"
+             Title="Revisión de Tarea"
+             BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#12161A}">
+
+    <ScrollView Padding="20">
+        <VerticalStackLayout Spacing="20" MaximumWidthRequest="700">
+
+            <!-- CABECERA DE LA TAREA -->
+            <Border Padding="20"
+                    StrokeThickness="1"
+                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
+                    StrokeShape="RoundRectangle 16"
+                    BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+                <VerticalStackLayout Spacing="8">
+                    <Label x:Name="LblTitle" FontSize="22" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                    <Label x:Name="LblDueDate" FontSize="13" FontAttributes="Bold" TextColor="#F87171" />
+                    <Label x:Name="LblStatusBadge" FontSize="12" TextColor="#5EEAD4" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ESTADÍSTICAS RÁPIDAS -->
+            <Grid ColumnDefinitions="*, *" ColumnSpacing="14">
+                <Border Grid.Column="0" Padding="14" StrokeShape="RoundRectangle 12" BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+                    <VerticalStackLayout HorizontalOptions="Center">
+                        <Label x:Name="LblCountSubmitted" FontSize="24" FontAttributes="Bold" TextColor="#5EEAD4" HorizontalOptions="Center" />
+                        <Label Text="Entregadas" FontSize="12" TextColor="#64748B" HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Column="1" Padding="14" StrokeShape="RoundRectangle 12" BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+                    <VerticalStackLayout HorizontalOptions="Center">
+                        <Label x:Name="LblCountMissing" FontSize="24" FontAttributes="Bold" TextColor="#F87171" HorizontalOptions="Center" />
+                        <Label Text="Sin entregar" FontSize="12" TextColor="#64748B" HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- LISTA DE ALUMNOS Y ESTADO DE ENTREGA -->
+            <Label Text="Alumnos inscritos" FontSize="17" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+
+            <CollectionView x:Name="CvStudentSubmissions" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,4" Padding="16,12" StrokeShape="RoundRectangle 12" BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnStudentItemTapped" />
+                            </Border.GestureRecognizers>
+
+                            <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12" VerticalOptions="Center">
+                                <Label Text="🎓" FontSize="22" VerticalOptions="Center" />
+
+                                <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                                    <Label Text="{Binding Student.Username}" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                                    <Label Text="{Binding StatusText}" FontSize="12" TextColor="{Binding StatusColor}" />
+                                </VerticalStackLayout>
+
+                                <Label Grid.Column="2" Text="{Binding GradeText}" FontAttributes="Bold" FontSize="14" TextColor="#5EEAD4" VerticalOptions="Center" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -324,6 +324,34 @@ namespace Examen2.Data
             }
         }
 
+        // --- OBTENER TODAS LAS ENTREGAS DE UNA TAREA ---
+        public async Task<List<TaskSubmission>> GetTaskSubmissionsAsync(int contentItemId)
+        {
+            await InitAsync();
+            var response = await _client.From<TaskSubmission>()
+                                       .Where(s => s.ContentItemId == contentItemId)
+                                       .Get();
+            return response.Models;
+        }
+
+        // --- GUARDAR O ACTUALIZAR CALIFICACIÓN Y FEEDBACK ---
+        public async Task<bool> UpdateTaskGradeAsync(int submissionId, double grade, string feedback)
+        {
+            await InitAsync();
+            var response = await _client.From<TaskSubmission>()
+                                       .Where(s => s.Id == submissionId)
+                                       .Get();
+
+            var submission = response.Models.FirstOrDefault();
+            if (submission == null) return false;
+
+            submission.Grade = grade;
+            submission.Feedback = feedback;
+
+            var updateResponse = await _client.From<TaskSubmission>().Update(submission);
+            return updateResponse.Models.Count > 0;
+        }
+
         public async Task<List<ClassContentItem>> GetGlobalActivitiesAsync(int userId)
         {
             await InitAsync();

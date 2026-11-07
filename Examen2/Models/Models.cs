@@ -137,5 +137,11 @@ namespace Examen2.Data
 
         [Column("submitted_at")]
         public DateTime SubmittedAt { get; set; } = DateTime.Now;
+
+        [Column("grade")]
+        public double? Grade { get; set; }
+
+        [Column("feedback")]
+        public string Feedback { get; set; }
     }
 }

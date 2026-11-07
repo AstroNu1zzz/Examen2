@@ -6,228 +6,194 @@
              BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#12161A}">
 
     <ScrollView Padding="20">
-        <VerticalStackLayout Spacing="20">
+        <VerticalStackLayout Spacing="20" MaximumWidthRequest="700">
 
-            <!-- ENCABEZADO SUPERIOR -->
-            <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
-                <Label x:Name="LblTopType" 
-                       Text="Tarea" 
-                       FontSize="20" 
-                       FontAttributes="Bold" 
-                       TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" 
-                       VerticalOptions="Center" />
+            <!-- CABECERA -->
+            <Border Padding="20"
+                    StrokeThickness="1"
+                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
+                    StrokeShape="RoundRectangle 16"
+                    BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+                <VerticalStackLayout Spacing="10">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <Label x:Name="LblTopType"
+                               FontSize="14"
+                               FontAttributes="Bold"
+                               TextColor="#5EEAD4" />
 
-                <Border Grid.Column="1" 
-                        BackgroundColor="#1E3A5F" 
-                        StrokeThickness="0" 
-                        IsVisible="{Binding Source={x:Reference LblSubmissionStatusTop}, Path=IsVisible}">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
-                    </Border.StrokeShape>
-                    <Label x:Name="LblSubmissionStatusTop" 
-                           Text="Asignada" 
-                           TextColor="White" 
-                           Padding="12,5" 
-                           FontSize="12" 
-                           FontAttributes="Bold" 
-                           IsVisible="False" />
-                </Border>
-            </Grid>
+                        <Label x:Name="LblSubmissionStatusTop"
+                               Grid.Column="1"
+                               FontSize="12"
+                               FontAttributes="Bold"
+                               TextColor="#5EEAD4" />
+                    </Grid>
 
-            <!-- 1. INSTRUCCIONES -->
-            <Border BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}" 
-                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}" 
-                    StrokeThickness="1" 
-                    Padding="20">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="16" />
-                </Border.StrokeShape>
-                <VerticalStackLayout Spacing="12">
-                    <Label x:Name="LblTitle" 
-                           FontSize="22" 
-                           FontAttributes="Bold" 
+                    <Label x:Name="LblTitle"
+                           FontSize="22"
+                           FontAttributes="Bold"
                            TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
 
-                    <HorizontalStackLayout x:Name="StackPoints" 
-                       IsVisible="{Binding ContentItem.IsTask}">
-                        <Label Text="•" 
-           FontSize="13" 
-           TextColor="{AppThemeBinding Light=#94A3B8, Dark=#64748B}" />
+                    <HorizontalStackLayout x:Name="StackPoints" Spacing="8">
                         <Label x:Name="LblPoints"
-           FontSize="13"
-           TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+                               FontSize="13"
+                               TextColor="#64748B" />
                     </HorizontalStackLayout>
+
                     <BoxView HeightRequest="1" Color="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}" Margin="0,4" />
 
-                    <Label Text="Instrucciones:" 
-                           FontSize="15" 
-                           FontAttributes="Bold" 
-                           TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Instrucciones:"
+                               FontSize="14"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                        <Label x:Name="LblDescription"
+                               FontSize="14"
+                               TextColor="{AppThemeBinding Light=#334155, Dark=#CBD5E1}" />
+                    </VerticalStackLayout>
 
-                    <Label x:Name="LblDescription" 
-                           FontSize="14" 
-                           TextColor="{AppThemeBinding Light=#334155, Dark=#CBD5E1}" 
-                           LineHeight="1.4" />
                     <Label x:Name="LblDueDate"
-       FontSize="13"
-       FontAttributes="Bold"
-       TextColor="#D93025"
-       IsVisible="False" />
+                           FontSize="12"
+                           FontAttributes="Bold"
+                           TextColor="#F87171"
+                           IsVisible="False"
+                           Margin="0,4,0,0" />
                 </VerticalStackLayout>
-
             </Border>
 
-            <!-- 2. MATERIALES DE REFERENCIA -->
-            <VerticalStackLayout Spacing="10" x:Name="LayoutTeacherAttachmentSection">
-                <Label Text="Materiales de referencia" 
-                       FontSize="16" 
-                       FontAttributes="Bold" 
+            <!-- MATERIALES DE REFERENCIA DEL PROFESOR -->
+            <VerticalStackLayout x:Name="LayoutTeacherAttachmentSection" Spacing="10" IsVisible="False">
+                <Label Text="Materiales de referencia"
+                       FontSize="16"
+                       FontAttributes="Bold"
                        TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
 
-                <Border x:Name="LayoutTeacherAttachment" 
-                        BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}" 
-                        Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}" 
-                        StrokeThickness="1" 
-                        Padding="14" 
-                        IsVisible="False">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="12" />
-                    </Border.StrokeShape>
-                    <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
-                        <Border WidthRequest="40" HeightRequest="40" StrokeShape="RoundRectangle 8" BackgroundColor="{AppThemeBinding Light=#EFF6FF, Dark=#1E293B}" StrokeThickness="0">
-                            <Label Text="📄" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
-                        </Border>
-                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
-                            <Label x:Name="LblTeacherFileName" 
-                                   FontSize="14" 
-                                   FontAttributes="Bold" 
-                                   TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" 
-                                   LineBreakMode="TailTruncation" />
-                            <Label Text="Documento adjunto" 
-                                   FontSize="11" 
-                                   TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
+                <Border x:Name="LayoutTeacherAttachment"
+                        Padding="14"
+                        StrokeThickness="1"
+                        Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
+                        StrokeShape="RoundRectangle 12"
+                        BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+                    <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12" VerticalOptions="Center">
+                        <Label Text="📄" FontSize="22" VerticalOptions="Center" />
+
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                            <Label x:Name="LblTeacherFileName"
+                                   FontAttributes="Bold"
+                                   FontSize="13"
+                                   LineBreakMode="MiddleTruncation"
+                                   TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                            <Label Text="Documento adjunto"
+                                   FontSize="11"
+                                   TextColor="#64748B" />
                         </VerticalStackLayout>
-                        <Button Grid.Column="2" 
-                                Text="Ver" 
-                                Clicked="OnOpenTeacherFileClicked" 
-                                BackgroundColor="Transparent" 
-                                TextColor="#5C93F9" 
-                                FontAttributes="Bold" />
+
+                        <Button Grid.Column="2"
+                                Text="Ver"
+                                FontSize="12"
+                                TextColor="#5EEAD4"
+                                BackgroundColor="Transparent"
+                                Clicked="OnOpenTeacherFileClicked" />
                     </Grid>
                 </Border>
             </VerticalStackLayout>
 
-            <!-- 3. TU TRABAJO -->
-            <Border x:Name="BorderStudentSubmission" 
-        BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}" 
-        Stroke="#5EEAD4" 
-        StrokeThickness="1.5" 
-        Padding="20" 
-        IsVisible="False">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="16" />
-                </Border.StrokeShape>
+            <!-- SECCIÓN TU TRABAJO (ALUMNO) -->
+            <Border x:Name="BorderStudentSubmission"
+                    Padding="18"
+                    StrokeThickness="1.5"
+                    Stroke="#5EEAD4"
+                    StrokeShape="RoundRectangle 16"
+                    BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+
                 <VerticalStackLayout Spacing="14">
+
+                    <!-- CABECERA DE TU TRABAJO -->
                     <Grid ColumnDefinitions="*, Auto">
-                        <Label Text="Tu trabajo" 
-                   FontSize="18" 
-                   FontAttributes="Bold" 
-                   TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
-                        <Label x:Name="LblSubmissionStatus" 
-                   Grid.Column="1" 
-                   Text="Sin entregar" 
-                   FontSize="12" 
-                   FontAttributes="Bold"
-                   TextColor="#5EEAD4" 
-                   VerticalOptions="Center" />
+                        <Label Text="Tu trabajo"
+                               FontSize="16"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+
+                        <Label x:Name="LblSubmissionStatus"
+                               Grid.Column="1"
+                               Text="Sin entregar"
+                               FontSize="13"
+                               FontAttributes="Bold"
+                               TextColor="#EF4444" />
                     </Grid>
 
-                    <Button Text="＋ Agregar trabajo o archivo" 
-                Clicked="OnPickSubmissionFileClicked" 
-                BackgroundColor="Transparent" 
-                TextColor="{AppThemeBinding Light=#2563EB, Dark=#60A5FA}" 
-                BorderColor="{AppThemeBinding Light=#2563EB, Dark=#60A5FA}" 
-                BorderWidth="1" 
-                CornerRadius="10" 
-                HeightRequest="45" />
+                    <!-- PUNTUACIÓN DE LA CALIFICACIÓN -->
+                    <Border x:Name="BorderGradeBadge"
+                            IsVisible="False"
+                            Padding="12,8"
+                            HorizontalOptions="Start"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 8"
+                            BackgroundColor="#132A2B">
+                        <HorizontalStackLayout Spacing="6">
+                            <Label Text="⭐ Calificación:" FontSize="13" FontAttributes="Bold" TextColor="#5EEAD4" />
+                            <Label x:Name="LblGradeScore" FontSize="14" FontAttributes="Bold" TextColor="White" />
+                        </HorizontalStackLayout>
+                    </Border>
 
-                    <!-- TARJETA ESTILIZADA PARA EL ARCHIVO SUBIDO POR EL ALUMNO -->
+                    <!-- RETROALIMENTACIÓN DEL PROFESOR -->
+                    <Border x:Name="BorderFeedback"
+                            IsVisible="False"
+                            Padding="14"
+                            StrokeThickness="1"
+                            Stroke="#5EEAD4"
+                            StrokeShape="RoundRectangle 12"
+                            BackgroundColor="{AppThemeBinding Light=#F0FDFA, Dark=#132A2B}">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="💬 Comentarios del profesor:" FontAttributes="Bold" FontSize="12" TextColor="#5EEAD4" />
+                            <Label x:Name="LblTeacherFeedback" FontSize="13" TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- ARCHIVO SUBIDO POR EL ALUMNO -->
                     <Border x:Name="LayoutStudentAttachment"
-                BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#12161A}"
-                Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
-                StrokeThickness="1"
-                Padding="12"
-                IsVisible="False">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="10" />
-                        </Border.StrokeShape>
-                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12">
-                            <Border WidthRequest="36" 
-                        HeightRequest="36" 
-                        StrokeShape="RoundRectangle 8" 
-                        BackgroundColor="{AppThemeBinding Light=#EFF6FF, Dark=#1E293B}" 
-                        StrokeThickness="0">
-                                <Label Text="📄" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
-                            </Border>
-
-                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
-                                <Label x:Name="LblSubmittedFileName" 
-                           FontSize="13" 
-                           FontAttributes="Bold" 
-                           TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" 
-                           LineBreakMode="TailTruncation" />
-                                <Label Text="Archivo adjunto" 
-                           FontSize="11" 
-                           TextColor="{AppThemeBinding Light=#64748B, Dark=#94A3B8}" />
-                            </VerticalStackLayout>
-
-                            <Button Grid.Column="2" 
-                        Text="Ver" 
-                        Clicked="OnOpenSubmittedFileClicked" 
-                        BackgroundColor="Transparent" 
-                        TextColor="#5C93F9" 
-                        FontAttributes="Bold" />
+                            IsVisible="False"
+                            Padding="12"
+                            StrokeThickness="1"
+                            Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
+                            StrokeShape="RoundRectangle 10"
+                            BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#181D23}">
+                        <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="10" VerticalOptions="Center">
+                            <Label Text="📄" FontSize="20" VerticalOptions="Center" />
+                            <Label x:Name="LblSubmittedFileName"
+                                   Grid.Column="1"
+                                   FontSize="12"
+                                   LineBreakMode="MiddleTruncation"
+                                   VerticalOptions="Center"
+                                   TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                            <Button Grid.Column="2"
+                                    Text="Ver"
+                                    FontSize="12"
+                                    TextColor="#5EEAD4"
+                                    BackgroundColor="Transparent"
+                                    Clicked="OnOpenSubmittedFileClicked" />
                         </Grid>
                     </Border>
 
-                    <Button x:Name="BtnSubmit" 
-                Text="Entregar tarea" 
-                Clicked="OnSubmitTaskClicked" 
-                BackgroundColor="#5EEAD4" 
-                TextColor="#0F172A" 
-                FontAttributes="Bold" 
-                CornerRadius="10" 
-                HeightRequest="45" />
-                </VerticalStackLayout>
-            </Border>
+                    <!-- BOTONES DE ACCIÓN -->
+                    <Button x:Name="BtnAddFile"
+                            Text="+ Agregar trabajo o archivo"
+                            BackgroundColor="Transparent"
+                            TextColor="#5EEAD4"
+                            BorderColor="#5EEAD4"
+                            BorderWidth="1"
+                            CornerRadius="8"
+                            Clicked="OnAddFileClicked" />
 
-            <!-- 4. COMENTARIOS PRIVADOS -->
-            <Border BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}" 
-                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}" 
-                    StrokeThickness="1" 
-                    Padding="20">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="16" />
-                </Border.StrokeShape>
-                <VerticalStackLayout Spacing="12">
-                    <Label Text="Comentarios privados" 
-                           FontSize="15" 
-                           FontAttributes="Bold" 
-                           TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                    <Button x:Name="BtnSubmit"
+                            Text="Entregar tarea"
+                            BackgroundColor="#5EEAD4"
+                            TextColor="#0F172A"
+                            FontAttributes="Bold"
+                            HeightRequest="44"
+                            CornerRadius="10"
+                            Clicked="OnSubmitTaskClicked" />
 
-                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
-                        <Entry Placeholder="Añadir comentario..." 
-                               PlaceholderColor="{AppThemeBinding Light=#94A3B8, Dark=#64748B}"
-                               TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}"
-                               BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#12161A}"
-                               FontSize="13" />
-                        <Button Grid.Column="1" 
-                                Text="Enviar" 
-                                BackgroundColor="#5EEAD4" 
-                                TextColor="#0F172A" 
-                                FontAttributes="Bold"
-                                CornerRadius="8" />
-                    </Grid>
                 </VerticalStackLayout>
             </Border>
 

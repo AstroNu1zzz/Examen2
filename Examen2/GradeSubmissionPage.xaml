@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Examen2.GradeSubmissionPage"
+             Title="Calificar Entrega"
+             BackgroundColor="{AppThemeBinding Light=#F8FAFC, Dark=#12161A}">
+
+    <ScrollView Padding="20">
+        <VerticalStackLayout Spacing="20" MaximumWidthRequest="600">
+
+            <!-- DATOS DEL ALUMNO Y TAREA -->
+            <Border Padding="18"
+                    StrokeThickness="1"
+                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
+                    StrokeShape="RoundRectangle 16"
+                    BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+                <VerticalStackLayout Spacing="6">
+                    <Label x:Name="LblStudentName" FontSize="20" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                    <Label x:Name="LblTaskTitle" FontSize="13" TextColor="#5EEAD4" />
+                    <Label x:Name="LblSubmittedAt" FontSize="12" TextColor="#64748B" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ARCHIVO ADJUNTO SUBIDO POR EL ALUMNO -->
+            <Label Text="Archivo adjunto" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+
+            <Border Padding="16"
+                    StrokeThickness="1"
+                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
+                    StrokeShape="RoundRectangle 14"
+                    BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+                <Grid ColumnDefinitions="Auto, *, Auto" ColumnSpacing="12" VerticalOptions="Center">
+                    <Label Text="📁" FontSize="24" VerticalOptions="Center" />
+
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                        <Label x:Name="LblFileName" FontAttributes="Bold" FontSize="13" LineBreakMode="MiddleTruncation" TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                        <Label Text="Clic para abrir en el navegador" FontSize="11" TextColor="#64748B" />
+                    </VerticalStackLayout>
+
+                    <Button Grid.Column="2"
+                            Text="Ver"
+                            FontSize="13"
+                            BackgroundColor="#5EEAD4"
+                            TextColor="#0F172A"
+                            FontAttributes="Bold"
+                            Clicked="OnOpenFileClicked" />
+                </Grid>
+            </Border>
+
+            <!-- FORMULARIO DE CALIFICACIÓN -->
+            <Label Text="Evaluación" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+
+            <Border Padding="18"
+                    StrokeThickness="1"
+                    Stroke="{AppThemeBinding Light=#E2E8F0, Dark=#2D3748}"
+                    StrokeShape="RoundRectangle 16"
+                    BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+                <VerticalStackLayout Spacing="14">
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Calificación (0 - 100):" FontSize="13" TextColor="#64748B" />
+                        <Entry x:Name="TxtGrade"
+                               Keyboard="Numeric"
+                               Placeholder="Ej. 95"
+                               TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Retroalimentación / Comentarios:" FontSize="13" TextColor="#64748B" />
+                        <Editor x:Name="TxtFeedback"
+                                HeightRequest="100"
+                                Placeholder="Escribe un comentario para el alumno..."
+                                TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}" />
+                    </VerticalStackLayout>
+
+                    <Button x:Name="BtnSaveGrade"
+                            Text="Guardar Calificación"
+                            FontAttributes="Bold"
+                            BackgroundColor="#5EEAD4"
+                            TextColor="#0F172A"
+                            HeightRequest="46"
+                            CornerRadius="10"
+                            Clicked="OnSaveGradeClicked" />
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -243,10 +243,18 @@ public partial class CourseDetailPage : ContentPage
         var border = sender as Border;
         var vm = border?.BindingContext as FeedPostViewModel;
 
-        // Si es un Anuncio, se ignora el toque y no navega al detalle
         if (vm == null || vm.SourceItem.ItemType == "Anuncio") return;
 
-        await Navigation.PushAsync(new ContentDetailPage(vm.SourceItem, _databaseService, _mainViewModel));
+        // Si es Profesor y es una Tarea -> Abrir panel del profesor
+        if (_isTeacher && vm.SourceItem.ItemType == "Tarea")
+        {
+            await Navigation.PushAsync(new TeacherTaskOverviewPage(vm.SourceItem, Course.Id, _databaseService, _mainViewModel));
+        }
+        else
+        {
+            // Si es Alumno o es un Material -> Abrir vista estándar de entrega/lectura
+            await Navigation.PushAsync(new ContentDetailPage(vm.SourceItem, _databaseService, _mainViewModel));
+        }
     }
 
     private void OnPostOptionsClicked(object sender, EventArgs e)

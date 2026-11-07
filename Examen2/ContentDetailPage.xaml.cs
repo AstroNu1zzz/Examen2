@@ -49,7 +49,6 @@ public partial class ContentDetailPage : ContentPage
             LblSubmissionStatusTop.IsVisible = false;
         }
 
-        // --- CORRECCIÓN: Evaluar si el adjunto del profesor es URL o ruta local existente ---
         bool isUrl = !string.IsNullOrEmpty(_item.AttachedFilePath) &&
                      (_item.AttachedFilePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                       _item.AttachedFilePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
@@ -72,33 +71,74 @@ public partial class ContentDetailPage : ContentPage
         if (_mainViewModel?.CurrentUser == null) return;
 
         var sub = await _databaseService.GetTaskSubmissionAsync(_item.Id, _mainViewModel.CurrentUser.Id);
+
         if (sub != null && !string.IsNullOrEmpty(sub.FilePath))
         {
             _submissionFilePath = sub.FilePath;
             LblSubmittedFileName.Text = Path.GetFileName(sub.FilePath);
             LayoutStudentAttachment.IsVisible = true;
 
-            LblSubmissionStatus.Text = "Entregado";
-            LblSubmissionStatus.TextColor = Color.FromArgb("#5EEAD4");
-            LblSubmissionStatusTop.Text = "Entregado";
-            BtnSubmit.Text = "Anular entrega";
-            BtnSubmit.BackgroundColor = Color.FromArgb("#D93025");
-            BtnSubmit.TextColor = Colors.White;
+            if (sub.Grade.HasValue)
+            {
+                LblSubmissionStatus.Text = "Calificado";
+                LblSubmissionStatus.TextColor = Color.FromArgb("#5EEAD4");
+                LblSubmissionStatusTop.Text = "Calificado";
+
+                BorderGradeBadge.IsVisible = true;
+                LblGradeScore.Text = $"{sub.Grade.Value} / 100";
+
+                if (!string.IsNullOrWhiteSpace(sub.Feedback))
+                {
+                    LblTeacherFeedback.Text = sub.Feedback;
+                    BorderFeedback.IsVisible = true;
+                }
+                else
+                {
+                    BorderFeedback.IsVisible = false;
+                }
+
+                BtnSubmit.Text = "Tarea calificada";
+                BtnSubmit.IsEnabled = false;
+                BtnSubmit.BackgroundColor = Color.FromArgb("#2D3748");
+                BtnSubmit.TextColor = Color.FromArgb("#94A3B8");
+                BtnAddFile.IsVisible = false;
+            }
+            else
+            {
+                LblSubmissionStatus.Text = "Entregado";
+                LblSubmissionStatus.TextColor = Color.FromArgb("#5EEAD4");
+                LblSubmissionStatusTop.Text = "Entregado";
+
+                BorderGradeBadge.IsVisible = false;
+                BorderFeedback.IsVisible = false;
+
+                BtnSubmit.Text = "Anular entrega";
+                BtnSubmit.IsEnabled = true;
+                BtnSubmit.BackgroundColor = Color.FromArgb("#D93025");
+                BtnSubmit.TextColor = Colors.White;
+                BtnAddFile.IsVisible = false;
+            }
         }
         else
         {
             _submissionFilePath = null;
             LayoutStudentAttachment.IsVisible = false;
             LblSubmissionStatus.Text = "Sin entregar";
-            LblSubmissionStatus.TextColor = Color.FromArgb("#5EEAD4");
+            LblSubmissionStatus.TextColor = Color.FromArgb("#EF4444");
             LblSubmissionStatusTop.Text = "Asignada";
+
+            BorderGradeBadge.IsVisible = false;
+            BorderFeedback.IsVisible = false;
+
             BtnSubmit.Text = "Entregar tarea";
+            BtnSubmit.IsEnabled = true;
             BtnSubmit.BackgroundColor = Color.FromArgb("#5EEAD4");
             BtnSubmit.TextColor = Color.FromArgb("#0F172A");
+            BtnAddFile.IsVisible = true;
         }
     }
 
-    private async void OnPickSubmissionFileClicked(object sender, EventArgs e)
+    private async void OnAddFileClicked(object sender, EventArgs e)
     {
         try
         {
@@ -117,7 +157,6 @@ public partial class ContentDetailPage : ContentPage
         }
     }
 
-    // --- MÉTODO DEL PROFESOR ACTUALIZADO PARA ABRIR URLS EN NAVEGADOR ---
     private async void OnOpenTeacherFileClicked(object sender, EventArgs e)
     {
         if (string.IsNullOrEmpty(_item.AttachedFilePath)) return;
@@ -182,6 +221,8 @@ public partial class ContentDetailPage : ContentPage
 
     private async void OnSubmitTaskClicked(object sender, EventArgs e)
     {
+        if (BtnSubmit.Text == "Tarea calificada") return;
+
         if (BtnSubmit.Text == "Anular entrega")
         {
             bool confirm = await DisplayAlert("Anular entrega", "¿Quieres anular la entrega de esta tarea?", "Sí, anular", "Cancelar");
@@ -191,10 +232,12 @@ public partial class ContentDetailPage : ContentPage
             _pickedFileResult = null;
             LayoutStudentAttachment.IsVisible = false;
             LblSubmissionStatus.Text = "Sin entregar";
+            LblSubmissionStatus.TextColor = Color.FromArgb("#EF4444");
             LblSubmissionStatusTop.Text = "Asignada";
             BtnSubmit.Text = "Entregar tarea";
             BtnSubmit.BackgroundColor = Color.FromArgb("#5EEAD4");
             BtnSubmit.TextColor = Color.FromArgb("#0F172A");
+            BtnAddFile.IsVisible = true;
             return;
         }
 
