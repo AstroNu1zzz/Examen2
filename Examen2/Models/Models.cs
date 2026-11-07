@@ -21,6 +21,9 @@ namespace Examen2.Data
 
         [Column("profile_picture_path")]
         public string ProfilePicturePath { get; set; }
+
+        [Column("is_2fa_enabled")]
+        public bool Is2FAEnabled { get; set; }
     }
 
     [Table("courses")]

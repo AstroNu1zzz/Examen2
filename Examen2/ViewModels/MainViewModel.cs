@@ -2,7 +2,6 @@
 using Examen2.Services;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Storage;
-using SQLite;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -113,8 +112,6 @@ namespace Examen2.ViewModels
             DeleteCourseCommand = new Command<Course>(OnDeleteCourse);
 
             _ = LoadCoursesAsync();
-
-
         }
 
         public void SetCurrentUser(User user)
@@ -123,7 +120,7 @@ namespace Examen2.ViewModels
             if (user != null)
             {
                 Preferences.Default.Set("LoggedInUserId", user.Id);
-                _ = LoadCoursesAsync(); // Recarga las clases del nuevo usuario
+                _ = LoadCoursesAsync();
             }
             LoadProfilePicture();
         }
@@ -139,19 +136,6 @@ namespace Examen2.ViewModels
             {
                 ProfileImageSource = null;
                 HasProfilePicture = false;
-            }
-        }
-
-
-        private async void OnOpenActivity(ActivityItemViewModel activity)
-        {
-            if (activity?.OriginalItem == null) return;
-
-            if (Application.Current?.MainPage != null)
-            {
-                await Application.Current.MainPage.Navigation.PushAsync(
-                    new ContentDetailPage(activity.OriginalItem, _databaseService, this)
-                );
             }
         }
 
@@ -191,12 +175,10 @@ namespace Examen2.ViewModels
 
         private void OnLogout()
         {
-            // Limpiar almacenamiento de preferencias
             Preferences.Default.Remove("IsLoggedIn");
             Preferences.Default.Remove("CurrentUserId");
             Preferences.Default.Remove("Last2FAVerifiedAt");
 
-            // Redirigir a la pantalla de inicio de sesión
             if (Application.Current != null)
             {
                 Application.Current.MainPage = new NavigationPage(new LoginPage(_databaseService, _emailService, this));
@@ -207,7 +189,6 @@ namespace Examen2.ViewModels
         {
             if (CurrentUser == null) return;
 
-            // 1. Recargar lista de cursos inscritos
             var courses = await _databaseService.GetCoursesAsync(CurrentUser.Id);
             EnrolledCourses.Clear();
             foreach (var c in courses)
@@ -215,7 +196,6 @@ namespace Examen2.ViewModels
                 EnrolledCourses.Add(c);
             }
 
-            // 2. Recargar publicaciones del Tablón de Novedades Global
             var activities = await _databaseService.GetGlobalActivitiesAsync(CurrentUser.Id);
             GlobalRecentActivities.Clear();
 
@@ -240,7 +220,7 @@ namespace Examen2.ViewModels
 
                 GlobalRecentActivities.Add(new ActivityItemViewModel
                 {
-                    OriginalItem = a, // <--- LÍNEA CLAVE QUE FALTABA
+                    OriginalItem = a,
                     DisplayTitle = $"{a.ItemType}: {a.Title}",
                     Subtitle = $"{courseName} • Publicado el {a.CreatedAt:dd MMM}",
                     GradientStartColor = gradient,
@@ -251,12 +231,51 @@ namespace Examen2.ViewModels
             }
         }
 
+        // --- EVENTO DEL BOTÓN + (UNIRSE O CREAR CLASE) ---
         private async void OnAddCourse()
         {
             IsDrawerVisible = false;
-            var addCoursePage = Application.Current?.Handler?.MauiContext?.Services.GetService<AddCoursePage>();
-            if (Application.Current?.MainPage != null && addCoursePage != null)
+            if (CurrentUser == null || Application.Current?.MainPage == null) return;
+
+            string action = await Application.Current.MainPage.DisplayActionSheet(
+                "¿Qué deseas hacer?",
+                "Cancelar",
+                null,
+                "Unirse a una clase",
+                "Crear una clase");
+
+            if (action == "Unirse a una clase")
             {
+                string code = await Application.Current.MainPage.DisplayPromptAsync(
+                    "Unirse a clase",
+                    "Ingresa el código de 6 caracteres que te dio el profesor:",
+                    accept: "Unirse",
+                    cancel: "Cancelar",
+                    placeholder: "Ej. X8K9P2",
+                    maxLength: 6,
+                    keyboard: Microsoft.Maui.Keyboard.Text); // Usar explícitamente Microsoft.Maui.Keyboard
+
+                if (string.IsNullOrWhiteSpace(code)) return;
+
+                code = code.Trim().ToUpper();
+
+                var (success, message) = await _databaseService.JoinCourseWithCodeAsync(code, CurrentUser.Id);
+
+                await Application.Current.MainPage.DisplayAlert(
+                    success ? "Éxito" : "Atención",
+                    message,
+                    "OK");
+
+                if (success)
+                {
+                    await RefreshCoursesAsync();
+                }
+            }
+            else if (action == "Crear una clase")
+            {
+                var addCoursePage = Application.Current?.Handler?.MauiContext?.Services.GetService<AddCoursePage>()
+                                    ?? new AddCoursePage(_databaseService, this);
+
                 await Application.Current.MainPage.Navigation.PushAsync(addCoursePage);
             }
         }
@@ -290,7 +309,6 @@ namespace Examen2.ViewModels
             EnrolledCourses.Clear();
             foreach (var course in courses)
             {
-                // Si TeacherName viene nulo de la BD pero PrimaryTeacherName tiene valor, normalizarlo
                 if (string.IsNullOrWhiteSpace(course.TeacherName) && !string.IsNullOrWhiteSpace(course.PrimaryTeacherName))
                 {
                     course.TeacherName = course.PrimaryTeacherName;
@@ -365,8 +383,15 @@ namespace Examen2.ViewModels
         private async void OnNavigateSettings()
         {
             IsDrawerVisible = false;
+            IsProfileMenuVisible = false; // Cerrar el menú desplegable al hacer clic
+
             if (Application.Current?.MainPage != null)
-                await Application.Current.MainPage.Navigation.PushAsync(new SettingsPage());
+            {
+                var settingsPage = Application.Current?.Handler?.MauiContext?.Services.GetService<SettingsPage>()
+                                    ?? new SettingsPage(_databaseService, this);
+
+                await Application.Current.MainPage.Navigation.PushAsync(settingsPage);
+            }
         }
 
         private async void OnOpenCourse(Course selectedCourse)
@@ -394,7 +419,7 @@ namespace Examen2.ViewModels
 
     public class ActivityItemViewModel
     {
-        public ClassContentItem OriginalItem { get; set; } // <--- Referencia al item completo
+        public ClassContentItem OriginalItem { get; set; }
         public string DisplayTitle { get; set; }
         public string Subtitle { get; set; }
         public string GradientStartColor { get; set; }

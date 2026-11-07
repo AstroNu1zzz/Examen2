@@ -12,6 +12,7 @@ public partial class CourseDetailPage : ContentPage
 
     private DatabaseService _databaseService;
     private MainViewModel _mainViewModel;
+    private bool _isTeacher;
 
     public CourseDetailPage(Course course, DatabaseService databaseService = null, MainViewModel mainViewModel = null)
     {
@@ -44,6 +45,34 @@ public partial class CourseDetailPage : ContentPage
 
         if (_databaseService == null || Course == null) return;
 
+        // 1. Determinar el rol del usuario en la clase
+        if (_mainViewModel?.CurrentUser != null)
+        {
+            string role = await _databaseService.GetUserRoleInCourseAsync(Course.Id, _mainViewModel.CurrentUser.Id);
+            _isTeacher = (role == "Teacher");
+        }
+        else
+        {
+            _isTeacher = false;
+        }
+
+        // 2. Ajustar visibilidad de elementos según el rol (Profesor vs Alumno)
+        if (FindByName("FabAdd") is VisualElement fabAdd)
+        {
+            fabAdd.IsVisible = _isTeacher;
+        }
+
+        if (FindByName("BtnAddTeacher") is VisualElement btnAddTeacher)
+        {
+            btnAddTeacher.IsVisible = _isTeacher;
+        }
+
+        if (FindByName("BorderCreatePost") is VisualElement borderCreatePost)
+        {
+            borderCreatePost.IsVisible = _isTeacher;
+        }
+
+        // 3. Cargar publicaciones y tareas del Tablón
         var items = await _databaseService.GetCourseContentItemsAsync(Course.Id);
 
         FeedPosts.Clear();
@@ -58,6 +87,19 @@ public partial class CourseDetailPage : ContentPage
             {
                 AssignmentPosts.Add(vm);
             }
+        }
+
+        // 4. Cargar la lista de profesores y alumnos para la pestaña "Personas"
+        var teachers = await _databaseService.GetCourseTeachersAsync(Course.Id);
+        if (FindByName("CvTeachers") is CollectionView cvTeachers)
+        {
+            cvTeachers.ItemsSource = teachers;
+        }
+
+        var students = await _databaseService.GetCourseStudentsAsync(Course.Id);
+        if (FindByName("CvStudents") is CollectionView cvStudents)
+        {
+            cvStudents.ItemsSource = students;
         }
     }
 
@@ -103,6 +145,40 @@ public partial class CourseDetailPage : ContentPage
         await Navigation.PopAsync();
     }
 
+    private async void OnAddTeacherClicked(object sender, EventArgs e)
+    {
+        EnsureServices();
+
+        if (!_isTeacher)
+        {
+            await DisplayAlert("Acceso Restringido", "Solo los profesores pueden añadir a otros profesores.", "OK");
+            return;
+        }
+
+        string input = await DisplayPromptAsync(
+            "Añadir Profesor",
+            "Ingresa el nombre de usuario o correo del profesor:",
+            accept: "Añadir",
+            cancel: "Cancelar",
+            placeholder: "ejemplo@correo.com");
+
+        if (string.IsNullOrWhiteSpace(input)) return;
+
+        var (success, message) = await _databaseService.AddTeacherToCourseAsync(Course.Id, input.Trim());
+
+        await DisplayAlert(success ? "Éxito" : "Atención", message, "OK");
+
+        if (success)
+        {
+            // Actualizar la lista en pantalla
+            var teachers = await _databaseService.GetCourseTeachersAsync(Course.Id);
+            if (FindByName("CvTeachers") is CollectionView cvTeachers)
+            {
+                cvTeachers.ItemsSource = teachers;
+            }
+        }
+    }
+
     private async void OnVideoCallClicked(object sender, EventArgs e)
     {
         await DisplayAlert("Videollamada", "Iniciando sesión de videollamada para la clase...", "OK");
@@ -110,7 +186,7 @@ public partial class CourseDetailPage : ContentPage
 
     private async void OnCourseInfoClicked(object sender, EventArgs e)
     {
-        await DisplayAlert("Información del Curso", $"{Course.CourseName}\nProfesor: {Course.TeacherName}", "OK");
+        await DisplayAlert("Información del Curso", $"{Course.CourseName}\nCódigo de clase: {Course.CourseCode}\nProfesor: {Course.TeacherName}", "OK");
     }
 
     private async void OnCreatePostTapped(object sender, EventArgs e)
@@ -125,7 +201,13 @@ public partial class CourseDetailPage : ContentPage
 
     private async Task ShowCreateOptionsAsync()
     {
-        EnsureServices(); // Guarda de seguridad antes de validar
+        EnsureServices();
+
+        if (!_isTeacher)
+        {
+            await DisplayAlert("Acceso Restringido", "Solo el profesor de la clase puede publicar tareas o anuncios.", "OK");
+            return;
+        }
 
         if (_databaseService == null || _mainViewModel == null || Course == null)
         {

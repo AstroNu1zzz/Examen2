@@ -11,8 +11,8 @@ namespace Examen2.Data
 
         public DatabaseService()
         {
-            var url = "https://ebndevmaperaoshfrblu.supabase.co"; // Ejemplo: https://xyz.supabase.co
-            var key = "sb_publishable_JrSXPoMHeeJYEe3jgJQ5ZQ_OGWoE-A1"; // Tu sb_publishable_...
+            var url = "https://ebndevmaperaoshfrblu.supabase.co";
+            var key = "sb_publishable_JrSXPoMHeeJYEe3jgJQ5ZQ_OGWoE-A1";
 
             var options = new SupabaseOptions
             {
@@ -39,7 +39,6 @@ namespace Examen2.Data
 
             try
             {
-                // NOTA: 'Workflow-files' con 'f' minúscula, tal como figura en tu panel de Supabase
                 var storage = _client.Storage.From("Workflow-files");
                 string fileName = $"{Guid.NewGuid()}_{originalFileName}";
 
@@ -59,6 +58,94 @@ namespace Examen2.Data
                 System.Diagnostics.Debug.WriteLine($"Error Supabase Storage: {ex.Message}");
                 return (null, ex.Message);
             }
+        }
+
+        // --- UNIRSE A UNA CLASE POR CÓDIGO ---
+        public async Task<(bool Success, string Message)> JoinCourseWithCodeAsync(string courseCode, int userId)
+        {
+            await InitAsync();
+
+            if (string.IsNullOrWhiteSpace(courseCode))
+                return (false, "El código no puede estar vacío.");
+
+            try
+            {
+                var courseResponse = await _client.From<Course>()
+                                                  .Where(c => c.CourseCode == courseCode)
+                                                  .Get();
+
+                var course = courseResponse.Models.FirstOrDefault();
+                if (course == null)
+                    return (false, "No se encontró ninguna clase con ese código.");
+
+                var memberResponse = await _client.From<CourseMember>()
+                                                  .Where(m => m.CourseId == course.Id && m.UserId == userId)
+                                                  .Get();
+
+                if (memberResponse.Models.Any())
+                    return (false, "Ya te encuentras inscrito en esta clase.");
+
+                var newStudent = new CourseMember
+                {
+                    CourseId = course.Id,
+                    UserId = userId,
+                    Role = "Student",
+                    IsPrimary = false
+                };
+
+                await _client.From<CourseMember>().Insert(newStudent);
+                return (true, $"Te has unido a la clase '{course.CourseName}' exitosamente.");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al unirse: {ex.Message}");
+                return (false, "Ocurrió un error al intentar unirse a la clase.");
+            }
+        }
+
+        public async Task<string> GetUserRoleInCourseAsync(int courseId, int userId)
+        {
+            await InitAsync();
+            var response = await _client.From<CourseMember>()
+                                       .Where(m => m.CourseId == courseId && m.UserId == userId)
+                                       .Get();
+            return response.Models.FirstOrDefault()?.Role ?? "Student";
+        }
+
+        // --- OBTENER ALUMNOS DE LA CLASE ---
+        public async Task<List<User>> GetCourseStudentsAsync(int courseId)
+        {
+            await InitAsync();
+            var memberResponse = await _client.From<CourseMember>()
+                                               .Where(m => m.CourseId == courseId && m.Role == "Student")
+                                               .Get();
+
+            var userIds = memberResponse.Models.Select(m => m.UserId).ToList();
+            if (!userIds.Any()) return new List<User>();
+
+            var usersResponse = await _client.From<User>()
+                                              .Filter("id", Constants.Operator.In, userIds)
+                                              .Get();
+
+            return usersResponse.Models;
+        }
+
+        // --- OBTENER PROFESORES DE LA CLASE ---
+        public async Task<List<User>> GetCourseTeachersAsync(int courseId)
+        {
+            await InitAsync();
+            var memberResponse = await _client.From<CourseMember>()
+                                               .Where(m => m.CourseId == courseId && m.Role == "Teacher")
+                                               .Get();
+
+            var userIds = memberResponse.Models.Select(m => m.UserId).ToList();
+            if (!userIds.Any()) return new List<User>();
+
+            var usersResponse = await _client.From<User>()
+                                              .Filter("id", Constants.Operator.In, userIds)
+                                              .Get();
+
+            return usersResponse.Models;
         }
 
         // --- AUTENTICACIÓN Y USUARIOS ---
@@ -215,6 +302,26 @@ namespace Examen2.Data
             await InitAsync();
             var response = await _client.From<ClassContentItem>().Insert(item);
             return response.Models.Count > 0;
+        }
+
+        // --- ACTUALIZAR ESTADO DE 2FA ---
+        public async Task<bool> Update2FAStatusAsync(int userId, bool isEnabled)
+        {
+            await InitAsync();
+            try
+            {
+                var user = await GetUserByIdAsync(userId);
+                if (user == null) return false;
+
+                user.Is2FAEnabled = isEnabled;
+                var response = await _client.From<User>().Update(user);
+                return response.Models.Count > 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error al actualizar 2FA: {ex.Message}");
+                return false;
+            }
         }
 
         public async Task<List<ClassContentItem>> GetGlobalActivitiesAsync(int userId)

@@ -258,24 +258,72 @@
                 </VerticalStackLayout>
             </ScrollView>
 
-            <!-- VISTA 3: PERSONAS -->
+            <!-- PESTAÑA PERSONAS -->
             <ScrollView x:Name="ViewPersonas" IsVisible="False">
-                <VerticalStackLayout Spacing="20" Padding="16,16,16,24">
-                    <Label Text="Profesor" FontSize="18" FontAttributes="Bold" TextColor="#5EEAD4" />
-                    <Border StrokeThickness="1" Stroke="#E2E8F0" StrokeShape="RoundRectangle 12" Padding="14,10" BackgroundColor="White">
-                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="12">
-                            <Label Grid.Column="0" Text="👨‍🏫" FontSize="24" VerticalOptions="Center" />
-                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
-                                <Label Text="{Binding Course.DisplayTeacherName, StringFormat='Prof. {0}'}" FontAttributes="Bold" FontSize="14" TextColor="Black" />
-                                <Label Text="Profesor Titular" FontSize="12" TextColor="#64748B" />
-                            </VerticalStackLayout>
+                <VerticalStackLayout Padding="20" Spacing="24">
+
+                    <!-- SECCIÓN PROFESORES -->
+                    <VerticalStackLayout Spacing="12">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <Label Text="Profesores" FontSize="18" FontAttributes="Bold" TextColor="#5EEAD4" />
+
+                            <!-- Botón para añadir profesor (solo visible para profesores) -->
+                            <Button x:Name="BtnAddTeacher"
+                        Grid.Column="1"
+                        Text="＋ Añadir"
+                        FontSize="13"
+                        TextColor="#5EEAD4"
+                        BackgroundColor="Transparent"
+                        Clicked="OnAddTeacherClicked" />
                         </Grid>
-                    </Border>
+
+                        <CollectionView x:Name="CvTeachers" SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,4" Padding="14,10" StrokeShape="RoundRectangle 12" BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+                                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="12">
+                                            <Label Text="👨‍🏫" FontSize="20" VerticalOptions="Center"/>
+                                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                                <Label Text="{Binding Username}" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}"/>
+                                                <Label Text="{Binding Email}" FontSize="12" TextColor="#64748B"/>
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+
+                    <!-- SECCIÓN ALUMNOS -->
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Alumnos" FontSize="18" FontAttributes="Bold" TextColor="#5EEAD4" />
+
+                        <CollectionView x:Name="CvStudents" SelectionMode="None">
+                            <CollectionView.EmptyView>
+                                <Label Text="Aún no hay alumnos inscritos en esta clase." FontSize="13" TextColor="#64748B" Margin="0,10" />
+                            </CollectionView.EmptyView>
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,4" Padding="14,10" StrokeShape="RoundRectangle 12" BackgroundColor="{AppThemeBinding Light=White, Dark=#1E232B}">
+                                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="12">
+                                            <Label Text="🎓" FontSize="20" VerticalOptions="Center"/>
+                                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
+                                                <Label Text="{Binding Username}" FontAttributes="Bold" TextColor="{AppThemeBinding Light=#0F172A, Dark=#F8FAFC}"/>
+                                                <Label Text="{Binding Email}" FontSize="12" TextColor="#64748B"/>
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </VerticalStackLayout>
+
                 </VerticalStackLayout>
             </ScrollView>
 
             <!-- BOTÓN FLOTANTE MÁS (+) PARA PUBLICAR -->
             <Border HorizontalOptions="End"
+                    x:Name="FabAdd"
                     VerticalOptions="End"
                     Margin="0,0,20,20"
                     WidthRequest="56"

@@ -1,4 +1,3 @@
-using System;
 using Examen2.Data;
 using Examen2.Services;
 using Examen2.ViewModels;
@@ -11,57 +10,65 @@ public partial class LoginPage : ContentPage
     private readonly EmailService _emailService;
     private readonly MainViewModel _mainViewModel;
 
-    public LoginPage(DatabaseService databaseService, EmailService emailService, MainViewModel mainViewModel)
+    public LoginPage(DatabaseService databaseService = null, EmailService emailService = null, MainViewModel mainViewModel = null)
     {
         InitializeComponent();
-        _databaseService = databaseService;
-        _emailService = emailService;
-        _mainViewModel = mainViewModel;
+        _databaseService = databaseService ?? Application.Current?.Handler?.MauiContext?.Services.GetService<DatabaseService>();
+        _emailService = emailService ?? Application.Current?.Handler?.MauiContext?.Services.GetService<EmailService>();
+        _mainViewModel = mainViewModel ?? Application.Current?.Handler?.MauiContext?.Services.GetService<MainViewModel>();
     }
 
     private async void OnLoginClicked(object sender, EventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(UsernameEntry.Text) || string.IsNullOrWhiteSpace(PasswordEntry.Text))
+        string usernameOrEmail = UsernameEntry.Text?.Trim();
+        string password = PasswordEntry.Text?.Trim();
+
+        if (string.IsNullOrEmpty(usernameOrEmail) || string.IsNullOrEmpty(password))
         {
-            await DisplayAlert("Atención", "Por favor ingresa usuario y contraseña.", "OK");
+            await DisplayAlert("Campo requerido", "Por favor ingresa tu usuario/correo y contraseña.", "OK");
             return;
         }
 
-        LoginButton.Text = "Enviando código...";
         LoginButton.IsEnabled = false;
 
         try
         {
-            var user = await _databaseService.GetUserByUsernameOrEmailAsync(UsernameEntry.Text.Trim());
+            // 1. Consultar credenciales en Supabase
+            var user = await _databaseService.ValidateUserAsync(usernameOrEmail, password);
 
-            if (user == null || user.Password != PasswordEntry.Text)
+            if (user == null)
             {
-                await DisplayAlert("Error", "Usuario o contraseña incorrectos.", "OK");
+                await DisplayAlert("Error de acceso", "Usuario o contraseña incorrectos.", "OK");
+                LoginButton.IsEnabled = true;
                 return;
             }
 
-            string verificationCode = new Random().Next(100000, 999999).ToString();
-
-            var (isSent, errorDetail) = await _emailService.Send2FACodeAsync(user.Email, verificationCode);
-
-            if (isSent)
+            // 2. Evaluar el estado de 2FA configurado en la base de datos
+            if (user.Is2FAEnabled)
             {
+                // Si 2FA está ACTIVADO: Generar código, enviar por correo y navegar a TwoFactorPage
+                string verificationCode = new Random().Next(100000, 999999).ToString();
+                await _emailService.Send2FACodeAsync(user.Email, verificationCode);
+
+                LoginButton.IsEnabled = true;
                 await Navigation.PushAsync(new TwoFactorPage(user, verificationCode, _databaseService, _mainViewModel));
             }
             else
             {
-                // Despliega el error real en la pantalla del celular
-                await DisplayAlert("Fallo en SMTP", $"Detalle técnico:\n{errorDetail}", "OK");
+                // Si 2FA está DESACTIVADO: Entrar directo a MainPage
+                Preferences.Default.Set("IsLoggedIn", true);
+                Preferences.Default.Set("CurrentUserId", user.Id);
+
+                _mainViewModel.SetCurrentUser(user);
+
+                LoginButton.IsEnabled = true;
+                Application.Current.MainPage = new NavigationPage(new MainPage(_databaseService, _mainViewModel));
             }
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Error", $"Ocurrió un problema: {ex.Message}", "OK");
-        }
-        finally
-        {
-            LoginButton.Text = "Siguiente";
             LoginButton.IsEnabled = true;
+            await DisplayAlert("Error inesperado", $"No se pudo iniciar sesión: {ex.Message}", "OK");
         }
     }
 
